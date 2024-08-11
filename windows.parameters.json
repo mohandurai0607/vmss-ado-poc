@@ -1,0 +1,68 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vmssName": {
+            "value": "windows-scaleset"
+        },
+        "vmNamePrefix": {
+            "value": "vmsswinvm"
+        },
+        "instanceSize": {
+            "value": "Standard_B1s"
+        },
+        "instanceCount": {
+            "value": "1"
+        },
+        "upgradePolicyMode": {
+            "value": "Manual"
+        },
+        "vmPriority": {
+            "value": "Regular"
+        },
+        "osDisk": {
+            "value": {
+                "createOption": "fromImage",
+                "diskSizeGB": "128",
+                "managedDisk": {
+                    "storageAccountType": "Premium_LRS"
+                }
+            }
+        },
+        "osType": {
+            "value": "Windows"
+        },
+        "imageReference": {
+            "value": {
+                "publisher": "MicrosoftWindowsServer",
+                "offer": "WindowsServer",
+                "sku": "2016-Datacenter",
+                "version": "latest"
+            }
+        },
+        "adminUsername": {
+            "value": "devopsagent"
+        },
+        "adminPassword": {
+            "value": "devopsagent12@34"
+        },
+        "nicConfigurations": {
+            "value": [
+                {
+                    "nicSuffix": "-nic01",
+                    "ipConfigurations": [
+                        {
+                            "name": "ipconfig1",
+                            "properties": {
+                                "subnet": {
+                                    "id": "/subscriptions/41cf7a22-bca8-40b1-8afb-81da36e25597/resourceGroups/vmss-rg-poc1/providers/Microsoft.Network/virtualNetworks/vmss-vnet/subnets/default"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+    }
+}
