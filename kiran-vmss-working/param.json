@@ -1,0 +1,69 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachineScaleSetsName": {
+            "value": "ado"
+        },
+        "networkSecurityGroupId": {
+            "value": "/subscriptions/41cf7a22-bca8-40b1-8afb-81da36e25597/resourceGroups/packer-poc/providers/Microsoft.Network/networkSecurityGroups/basicNsgvmss-ado-vnet-nic01"
+        },
+        "subnetId": {
+            "value": "/subscriptions/41cf7a22-bca8-40b1-8afb-81da36e25597/resourceGroups/packer-poc/providers/Microsoft.Network/virtualNetworks/packer-vm-vnet/subnets/default"
+        },
+        "location": {
+            "value": "centralindia"
+        },
+        "skuName": {
+            "value": "Standard_DS1_v2"
+        },
+        "skuTier": {
+            "value": "Standard"
+        },
+        "skuCapacity": {
+            "value": 2
+        },
+        "adminUsername": {
+            "value": "mohan"
+        },
+        "adminPassword": {
+            "value": "OpenUser@123"
+        },
+        "imageReferenceId": {
+            "value": "/subscriptions/41cf7a22-bca8-40b1-8afb-81da36e25597/resourceGroups/packer-poc/providers/Microsoft.Compute/galleries/POCSpecGallery/images/test-image"
+        },
+        "diskSizeGB": {
+            "value": 127
+        },
+        "secureBootEnabled": {
+            "value": true
+        },
+        "vTpmEnabled": {
+            "value": true
+        },
+        "upgradePolicyMode": {
+            "value": "Manual"
+        },
+        "dnsServers": {
+            "value": []
+        },
+        "enableAcceleratedNetworking": {
+            "value": false
+        },
+        "disableTcpStateTracking": {
+            "value": false
+        },
+        "enableIPForwarding": {
+            "value": false
+        },
+        "nicName": {
+            "value": "vmss-ado-vnet-nic01"
+        },
+        "ipConfigName": {
+            "value": "vmss-ado-vnet-nic01-defaultIpConfiguration"
+        },
+        "isPrimaryNic": {
+            "value": true
+        }
+    }
+}
