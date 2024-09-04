@@ -1,0 +1,253 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachineScaleSetsName": {
+            "type": "String",
+            "metadata": {
+                "description": "The name of the Virtual Machine Scale Set."
+            }
+        },
+        "networkSecurityGroupId": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the Network Security Group."
+            }
+        },
+        "subnetId": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the subnet."
+            }
+        },
+        "location": {
+            "type": "String",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "The location for the resources."
+            }
+        },
+        "skuName": {
+            "type": "String",
+            "defaultValue": "Standard_DS1_v2",
+            "metadata": {
+                "description": "The SKU name for the Virtual Machine Scale Set."
+            }
+        },
+        "skuTier": {
+            "type": "String",
+            "defaultValue": "Standard",
+            "metadata": {
+                "description": "The SKU tier for the Virtual Machine Scale Set."
+            }
+        },
+        "skuCapacity": {
+            "type": "Int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "The capacity for the Virtual Machine Scale Set."
+            }
+        },
+        "adminUsername": {
+            "type": "String",
+            "metadata": {
+                "description": "The administrator username for the Virtual Machines."
+            }
+        },
+        "adminPassword": {
+            "type": "SecureString",
+            "metadata": {
+                "description": "The administrator password for the Virtual Machines."
+            }
+        },
+        "imageReferenceId": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the image to be used for the Virtual Machines."
+            }
+        },
+        "diskSizeGB": {
+            "type": "Int",
+            "defaultValue": 127,
+            "metadata": {
+                "description": "The size of the OS disk in GB."
+            }
+        },
+        "secureBootEnabled": {
+            "type": "Bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Specifies whether secure boot should be enabled."
+            }
+        },
+        "vTpmEnabled": {
+            "type": "Bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Specifies whether vTPM should be enabled."
+            }
+        },
+        "upgradePolicyMode": {
+            "type": "String",
+            "defaultValue": "Manual",
+            "allowedValues": [
+                "Manual",
+                "Automatic",
+                "Rolling"
+            ],
+            "metadata": {
+                "description": "The upgrade policy mode for the Virtual Machine Scale Set."
+            }
+        },
+        "dnsServers": {
+            "type": "Array",
+            "defaultValue": [],
+            "metadata": {
+                "description": "The list of DNS servers for the network interface."
+            }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "Bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies whether accelerated networking is enabled."
+            }
+        },
+        "disableTcpStateTracking": {
+            "type": "Bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies whether TCP state tracking is disabled."
+            }
+        },
+        "enableIPForwarding": {
+            "type": "Bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies whether IP forwarding is enabled."
+            }
+        },
+        "nicName": {
+            "type": "String",
+            "defaultValue": "vmss-ado-vnet-nic01",
+            "metadata": {
+                "description": "The name of the network interface configuration."
+            }
+        },
+        "ipConfigName": {
+            "type": "String",
+            "defaultValue": "vmss-ado-vnet-nic01-defaultIpConfiguration",
+            "metadata": {
+                "description": "The name of the IP configuration."
+            }
+        },
+        "isPrimaryNic": {
+            "type": "Bool",
+            "defaultValue": true,
+            "metadata": {
+                "description": "Indicates whether the NIC is the primary one."
+            }
+        }
+    },
+    "variables": {
+        "namingInfix": "[toLower(substring(concat(parameters('virtualMachineScaleSetsName'), uniqueString(resourceGroup().id)), 0, 9))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2024-03-01",
+            "name": "[parameters('virtualMachineScaleSetsName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "[parameters('skuName')]",
+                "tier": "[parameters('skuTier')]",
+                "capacity": "[parameters('skuCapacity')]"
+            },
+            "properties": {
+                "singlePlacementGroup": false,
+                "orchestrationMode": "Uniform",
+                "upgradePolicy": {
+                    "mode": "[parameters('upgradePolicyMode')]"
+                },
+                "scaleInPolicy": {
+                    "rules": [
+                        "Default"
+                    ],
+                    "forceDeletion": false
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('namingInfix')]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "windowsConfiguration": {
+                            "provisionVMAgent": true,
+                            "enableAutomaticUpdates": true
+                        },
+                        "secrets": [],
+                        "allowExtensionOperations": true
+                    },
+                    "storageProfile": {
+                        "osDisk": {
+                            "osType": "Windows",
+                            "createOption": "FromImage",
+                            "caching": "ReadWrite",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            },
+                            "diskSizeGB": "[parameters('diskSizeGB')]"
+                        },
+                        "imageReference": {
+                            "id": "[parameters('imageReferenceId')]"
+                        },
+                        "diskControllerType": "SCSI"
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[parameters('nicName')]",
+                                "properties": {
+                                    "primary": "[parameters('isPrimaryNic')]",
+                                    "enableAcceleratedNetworking": "[parameters('enableAcceleratedNetworking')]",
+                                    "disableTcpStateTracking": "[parameters('disableTcpStateTracking')]",
+                                    "networkSecurityGroup": {
+                                        "id": "[parameters('networkSecurityGroupId')]"
+                                    },
+                                    "dnsSettings": {
+                                        "dnsServers": "[parameters('dnsServers')]"
+                                    },
+                                    "enableIPForwarding": "[parameters('enableIPForwarding')]",
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[parameters('ipConfigName')]",
+                                            "properties": {
+                                                "primary": "[parameters('isPrimaryNic')]",
+                                                "subnet": {
+                                                    "id": "[parameters('subnetId')]"
+                                                },
+                                                "privateIPAddressVersion": "IPv4"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": []
+                    },
+                    "securityProfile": {
+                        "uefiSettings": {
+                            "secureBootEnabled": "[parameters('secureBootEnabled')]",
+                            "vTpmEnabled": "[parameters('vTpmEnabled')]"
+                        },
+                        "securityType": "TrustedLaunch"
+                    }
+                },
+                "overprovision": false,
+                "doNotRunExtensionsOnOverprovisionedVMs": false,
+                "platformFaultDomainCount": 1
+            }
+        }
+    ]
+}

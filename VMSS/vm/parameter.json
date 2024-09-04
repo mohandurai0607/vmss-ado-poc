@@ -1,0 +1,89 @@
+{
+        "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {
+            "location": {
+                "value": "centralindia"
+            },
+            "networkInterfaceName1": {
+                "value": "dev92_z1"
+            },
+            "networkSecurityGroupName": {
+                "value": "dev-nsg"
+            },
+            "networkSecurityGroupRules": {
+                "value": [
+                    {
+                        "name": "RDP",
+                        "properties": {
+                            "priority": 300,
+                            "protocol": "TCP",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "3389"
+                        }
+                    }
+                ]
+            },
+            "subnetName": {
+                "value": "default"
+            },
+            "virtualNetworkId": {
+                "value": "/subscriptions/41cf7a22-bca8-40b1-8afb-81da36e25597/resourceGroups/ado-vmss-poc/providers/Microsoft.Network/virtualNetworks/ado-vmss-poc-vnet"
+            },
+            "publicIpAddressName1": {
+                "value": "dev-ip"
+            },
+            "publicIpAddressType": {
+                "value": "Static"
+            },
+            "publicIpAddressSku": {
+                "value": "Standard"
+            },
+            "pipDeleteOption": {
+                "value": "Detach"
+            },
+            "virtualMachineName": {
+                "value": "dev"
+            },
+            "virtualMachineName1": {
+                "value": "dev"
+            },
+            "virtualMachineComputerName1": {
+                "value": "dev"
+            },
+            "virtualMachineRG": {
+                "value": "ado-vmss-poc"
+            },
+            "osDiskType": {
+                "value": "Premium_LRS"
+            },
+            "osDiskDeleteOption": {
+                "value": "Detach"
+            },
+            "virtualMachineSize": {
+                "value": "Standard_B2als_v2"
+            },
+            "nicDeleteOption": {
+                "value": "Detach"
+            },
+            "hibernationEnabled": {
+                "value": false
+            },
+            "securityType": {
+                "value": "TrustedLaunch"
+            },
+            "secureBoot": {
+                "value": true
+            },
+            "vTPM": {
+                "value": true
+            },
+            "virtualMachine1Zone": {
+                "value": "1"
+            }
+        }
+    }

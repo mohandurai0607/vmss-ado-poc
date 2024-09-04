@@ -1,0 +1,28 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "galleries_name": {
+            "defaultValue": "devsecopsdevimagegallery01",
+            "type": "String"
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Compute/galleries",
+            "apiVersion": "2022-03-03",
+            "name": "[parameters('galleries_name')]",
+            "location": "Central India",
+            "tags": {
+                "Cost Center": "9830"
+            },
+            "properties": {
+                "description": "DevSecOps Compute Gallery",
+                "identifier": {}
+            }
+        }
+    ],
+    "outputs": {}
+}

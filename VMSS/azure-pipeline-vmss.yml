@@ -1,0 +1,202 @@
+
+trigger:
+  - none
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: VMSSRG
+    value: 'test'
+  - name: ServiceConnection
+    value: 'azureServiceCICD'
+  - name: subscriptionId
+    value: '3e08e0d6-3d8b-4136-9991-f325b219d169'
+
+  - name: imageName
+    value: 'windows-ado-image'
+  - name: imageGalleryName
+    value: 'devsecopsdevimagegallery01'
+  # - name: subscriptionId
+  #   value: ''
+  # - name: subscriptionId
+  #   value: ''
+  # - name: subscriptionId
+  #   value: ''
+
+parameters:
+  - name: versionName
+    type: string
+    default: "0.0.1"
+  - name: DeployComputeGallery
+    type: boolean
+    default: true
+  - name: DeployImageBuilder
+    type: boolean
+    default: true
+  - name: DeleteGeneralizedVM
+    type: boolean
+    default: false
+  - name: CreateGeneralizedVM
+    type: boolean
+    default: false
+  - name: CreateGeneralizedVMImage
+    type: boolean
+    default: false
+  - name: CreateVMSS
+    type: boolean
+    default: true
+  - name: UpgradeImageVersionVMSS
+    type: boolean
+    default: false
+
+stages:
+  - stage: DevDeploy
+    jobs:
+      - job: PreDeployVMSS
+        displayName: Deploy to Dev Subscription
+        steps:
+          - ${{ if eq(parameters.DeployComputeGallery, true) }}:
+              - task: AzureResourceManagerTemplateDeployment@3
+                displayName: 'ARM Template deployment: Resource Group scope'
+                inputs:
+                  azureResourceManagerConnection: '$(ServiceConnection)'
+                  subscriptionId: '$(subscriptionId)'
+                  resourceGroupName: '$(VMSSRG)'
+                  location: '$(Location)'
+                  csmFile: VMSS/ResourceGroup/armtemplate.sig.json
+                  csmParametersFile: VMSS/ResourceGroup/armtemplate.sig.parameters.json
+                  addSpnToEnvironment: true
+
+          - ${{ if eq(parameters.DeployImageBuilder, true) }}:
+            - task: AzureResourceManagerTemplateDeployment@3
+              displayName: 'Deploy Bicep file'
+              inputs:
+                azureResourceManagerConnection: '$(ServiceConnection)'
+                subscriptionId: '$(subscriptionId)'
+                resourceGroupName: '$(VMSSRG)'
+                location: '$(Location)'
+                csmFile: VMSS/imageBuilder/main.bicep
+                # csmParametersFile:
+                # overrideParameters: |
+                #   -imageResourceGroupName '$(VMSSRG)'
+                #   -imageName '$(imageName)''
+                #   -replicationRegions 'East US'
+                #   -imageGalleryName '$(imageGalleryName)''
+                addSpnToEnvironment: true
+
+          # - ${{ if eq(parameters.DeployImageBuilder, true) }}:
+          #     - task: AzureCLI@2
+          #       displayName: 'Deploy Bicep file'
+          #       inputs:
+          #         azureSubscription: '$(ServiceConnection)'
+          #         scriptType: pscore
+          #         scriptLocation: inlineScript
+          #         inlineScript: |
+          #           az deployment group create \
+          #             --resource-group $(VMSSRG) \
+          #             --template-file VMSS/imageBuilder/main.bicep \
+          #             --over
+          #         addSpnToEnvironment: true
+
+          - ${{ if eq(parameters.CreateGeneralizedVM, true) }}:
+              - task: AzureResourceManagerTemplateDeployment@3
+                displayName: 'ARM Template deployment: VM'
+                inputs:
+                  azureResourceManagerConnection: '$(ServiceConnection)'
+                  subscriptionId: '$(subscriptionId)'
+                  resourceGroupName: '$(VMSSRG)'
+                  location: '$(Location)'
+                  csmFile: VMSS/vm/template.json
+                  csmParametersFile: VMSS/vm/parameter.json
+                  addSpnToEnvironment: true
+          
+          - ${{ if eq(parameters.DeleteGeneralizedVM, true) }}:
+              - task: AzureCLI@2
+                displayName: 'Azure CLI - Delete VM'
+                inputs:
+                  azureSubscription: '$(ServiceConnection)'
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    #az deployment sub create --location EastUS --template-file armtemplate.json --parameters armtemplate.parameters.json
+                    #az vmss delete --name CICD-BUILDAGENT-DEV-EUS-VMSS --resource-group $(VMSSRG)
+                    #az vm delete --resource-group $(VMSSRG) --name ADOVMSSDEVOPS30V2 --yes
+                  addSpnToEnvironment: true
+                  useGlobalConfig: true
+                  workingDirectory: VMSS/ResourceGroup
+
+          # - ${{ if eq(parameters.CreateGeneralizedVM, true) }}:
+          #     - task: AzureResourceManagerTemplateDeployment@3
+          #       displayName: 'ARM Template deployment: VM'
+          #       inputs:
+          #         azureResourceManagerConnection: '$(ServiceConnection)'
+          #         subscriptionId: '$(subscriptionId)'
+          #         resourceGroupName: '$(VMSSRG)'
+          #         location: '$(Location)'
+          #         csmFile: vmss/vm/template.json
+          #         csmParametersFile: vmss/vm/parameters.json
+          #         addSpnToEnvironment: true
+
+  - stage: DevDeployUpgrade
+    jobs:
+      - job: UpgradeVMSS
+        displayName: Deploy to Dev Subscription - UpgradeVMSS
+        steps:
+          - ${{ if eq(parameters.CreateGeneralizedVMImage, true) }}:
+              - task: AzureCLI@2
+                displayName: 'Azure CLI  VM Generalize'
+                inputs:
+                  azureSubscription: '$(ServiceConnection)'
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    az vm deallocate --name ADOVMSSDEVOPS30V2 --resource-group $(VMSSRG)
+                    az vm generalize --name ADOVMSSDEVOPS30V2 --resource-group $(VMSSRG)
+                    echo "version $(versionName)"
+                  addSpnToEnvironment: true
+                  useGlobalConfig: true
+                  workingDirectory: VMSS/ResourceGroup 
+
+          - ${{ if eq(parameters.CreateGeneralizedVMImage, true) }}:
+              - task: AzureResourceManagerTemplateDeployment@3
+                displayName: 'ARM Template deployment: VM Image'
+                inputs:
+                  azureResourceManagerConnection: '$(ServiceConnection)'
+                  subscriptionId: '$(subscriptionId)'
+                  resourceGroupName: '$(VMSSRG)'
+                  location: '$(Location)'
+                  csmFile: VMSS/vmimage/template.json
+                  csmParametersFile: VMSS/vmimage/parameters.json
+                  overrideParameters: '-versionName ${{ parameters.versionName }}'
+                  addSpnToEnvironment: true
+
+          - ${{ if eq(parameters.CreateVMSS, true) }}:
+              - task: AzureResourceManagerTemplateDeployment@3
+                displayName: 'ARM Template deployment: VMSS'
+                inputs:
+                  azureResourceManagerConnection: '$(ServiceConnection)'
+                  subscriptionId: '$(subscriptionId)'
+                  resourceGroupName: '$(VMSSRG)'
+                  location: '$(Location)'
+                  csmFile: VMSS/armtemplate.vmss.json
+                  csmParametersFile: VMSS/vmss.parameters.json
+                  addSpnToEnvironment: true
+
+          - ${{ if eq(parameters.UpgradeImageVersionVMSS, true) }}:
+              - task: AzureCLI@2
+                displayName: 'Azure CLI  VMSS upgrade Image ID'
+                inputs:
+                  azureSubscription: '$(ServiceConnection)'
+                  scriptType: pscore
+                  scriptLocation: inlineScript
+                  inlineScript: |
+                    #az deployment sub create --location EastUS --template-file armtemplate.json --parameters armtemplate.parameters.json
+                    #az vm deallocate --name ADOVMSSDEVOPS30V2 --resource-group $(VMSSRG)
+                    #az vm generalize --name ADOVMSSDEVOPS30V2 --resource-group $(VMSSRG)
+                    #az vmss update --name CICD-BUILDAGENT-DEV-EUS-VMSS --resource-group $(VMSSRG) --set virtualMachineProfile.storageProfile.imageReference.id=/subscriptions/$(subscriptionId)/resourceGroups/$(VMSSRG)/providers/Microsoft.Compute/galleries/devsecopsdevimagegallery01/images/ADOVMSSDEVOPS30/versions/${{ parameters.versionName }}
+
+                    #az vmss scale --name CICD-BUILDAGENT-DEV-EUS-VMSS --new-capacity 0 --resource-group $(VMSSRG) 
+                    #az vmss scale --name CICD-BUILDAGENT-DEV-EUS-VMSS --new-capacity 3 --resource-group $(VMSSRG) 
+                  addSpnToEnvironment: true
+                  useGlobalConfig: true
+                  workingDirectory: VMSS/ResourceGroup
