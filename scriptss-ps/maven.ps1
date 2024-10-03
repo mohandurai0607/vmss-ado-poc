@@ -208,12 +208,14 @@ try {
 }
 
 # Check for the extracted folder
-$mavenExtractedPath = Get-ChildItem $tempExtractPath | Where-Object { $_.PSIsContainer -and $_.Name -like "apache-maven*" } | Select-Object -First 1
+$mavenExtractedPath = Get-ChildItem $tempExtractPath | Where-Object { $_.PSIsContainer } | Select-Object -First 1
 if ($mavenExtractedPath -and (Test-Path $mavenExtractedPath.FullName)) {
-    Write-Host "Maven extracted successfully. Moving to $mavenPath..."
+    Write-Host "Maven extracted successfully to $($mavenExtractedPath.FullName). Moving to $mavenPath..."
     Move-Item $mavenExtractedPath.FullName $mavenPath
 } else {
     Write-Host "Extraction failed or the expected directory was not found." -ForegroundColor Red
+    Write-Host "Contents of the temp extraction directory:" -ForegroundColor Yellow
+    Get-ChildItem $tempExtractPath | ForEach-Object { Write-Host $_.FullName }
     exit 1
 }
 
