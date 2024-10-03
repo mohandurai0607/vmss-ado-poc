@@ -5,12 +5,15 @@ $apachePath = "C:\Program Files\Apache"
 $mavenPath = "$apachePath\Maven"
 
 Write-Host "Set TLS1.2"
+# Ensure TLS1.2 is used
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor "Tls12"
 
+# Remove any existing Maven installation if exists
 if (Test-Path $mavenPath) {
     Remove-Item $mavenPath -Recurse -Force
 }
 
+# Create Apache directory if it does not exist
 if (-not (Test-Path $apachePath)) {
     New-Item $apachePath -ItemType directory -Force
 }
@@ -22,14 +25,22 @@ $zipPath = "$env:TEMP\maven-3.9.9.zip"
 
 # Unpack the zip file
 Write-Host "Unpacking Maven..."
-7z x $zipPath -o"$env:TEMP\apache-maven" | Out-Null
+$unpackDir = "C:\apache-maven"
+7z x $zipPath -o$unpackDir | Out-Null
 
-# Locate the extracted folder
-$mavenExtractedPath = Get-ChildItem "$env:TEMP\apache-maven" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
-[IO.Directory]::Move($mavenExtractedPath.FullName, $mavenPath)
+# Verify unpacking and correct directory structure
+$mavenExtractedPath = Get-ChildItem $unpackDir | Where-Object { $_.Name -like "apache-maven-*" } | Select-Object -First 1
 
-# Clean up
-Remove-Item "$env:TEMP\apache-maven" -Recurse -Force
+if ($mavenExtractedPath -ne $null) {
+    Write-Host "Moving extracted Maven files to $mavenPath..."
+    [IO.Directory]::Move($mavenExtractedPath.FullName, $mavenPath)
+} else {
+    Write-Host "Extraction failed or the expected directory was not found." -ForegroundColor Red
+    exit 1
+}
+
+# Clean up temporary files
+Remove-Item $unpackDir -Recurse -Force
 Remove-Item $zipPath -Force
 
 # Set environment variables
@@ -37,10 +48,29 @@ Remove-Item $zipPath -Force
 [Environment]::SetEnvironmentVariable("MAVEN_HOME", $mavenPath, "Machine")
 
 # Add Maven to system PATH
+function Add-Path {
+    param (
+        [string]$Path
+    )
+    $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    if ($currentPath -notlike "*$Path*") {
+        [Environment]::SetEnvironmentVariable("Path", "$currentPath;$Path", "Machine")
+    }
+}
+
 Add-Path "$mavenPath\bin"
+
+# Make the path changes effective in the current session
+function Add-SessionPath {
+    param (
+        [string]$Path
+    )
+    $env:Path += ";$Path"
+}
+
 Add-SessionPath "$mavenPath\bin"
 
-# Verify installation
+# Check Maven installation
 mvn --version
 
 Write-Host "Apache Maven 3.9.9 installed successfully" -ForegroundColor Green
