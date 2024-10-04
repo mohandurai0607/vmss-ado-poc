@@ -22,7 +22,6 @@
 # mvn -version
 #------- above is working from offical one ------
 
-
 # Set the Maven version you want to install
 $mavenVersion = "3.9.9"
 $mavenUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
@@ -37,14 +36,8 @@ $installDir = "C:\software\Maven"
 Write-Host "Extracting Maven to $installDir"
 Expand-Archive -Path $downloadPath -DestinationPath $installDir -Force
 
-# Verify Maven extracted location
-$mavenInstallPath = "$installDir\maven-$mavenVersion"
-if (Test-Path $mavenInstallPath) {
-    Write-Host "Maven extracted successfully to $mavenInstallPath"
-} else {
-    Write-Host "Maven extraction failed. Path $mavenInstallPath does not exist."
-    exit 1
-}
+# Adjust path to the extracted directory (if it's extracted directly into C:\software\Maven without a versioned folder)
+$mavenInstallPath = "$installDir"
 
 # Set Maven Environment Variables
 $env:M2_HOME = $mavenInstallPath
@@ -70,4 +63,3 @@ if (Test-Path $mvnPath) {
 # Verify installation by calling mvn from the new path
 Write-Host "Running mvn -version"
 & $mvnPath -version
-
