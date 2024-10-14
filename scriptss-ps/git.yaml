@@ -24,7 +24,7 @@ parameters:
       - value2
 
   - name: AvilableSoftware
-    displayName: Select Avilable Software with version
+    displayName: Select Available Software with version
     type: string
     default: none
     values:
@@ -115,12 +115,9 @@ stages:
                         Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\git.exe"
                         Start-Process -FilePath "$SoftwareDir\git.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
 
-                        # Add Git to PATH system-wide via registry (for persistence across sessions)
-                        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
-                        $currentPath = (Get-ItemProperty -Path $regPath -Name PATH).PATH
-                        $newPath = "$SoftwareDir;$currentPath"
-                        Set-ItemProperty -Path $regPath -Name PATH -Value $newPath
-                        Write-Host "Git has been installed and added to PATH."
+                        # Add Git to the current user's PATH
+                        [Environment]::SetEnvironmentVariable("PATH", "$SoftwareDir;" + [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User), [System.EnvironmentVariableTarget]::User)
+                        Write-Host "Git has been installed and added to the current user's PATH."
 
                         $gitVersion = & "$SoftwareDir\git.exe" --version 2>&1
                         Write-Host "Git version: $gitVersion"
@@ -131,22 +128,14 @@ stages:
                         Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\helm.exe"
                         Start-Process -FilePath "$SoftwareDir\helm.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
 
-                        # Add Helm to PATH system-wide via registry
-                        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
-                        $currentPath = (Get-ItemProperty -Path $regPath -Name PATH).PATH
-                        $newPath = "$SoftwareDir;$currentPath"
-                        Set-ItemProperty -Path $regPath -Name PATH -Value $newPath
-                        Write-Host "Helm has been installed and added to PATH."
+                        # Add Helm to the current user's PATH
+                        [Environment]::SetEnvironmentVariable("PATH", "$SoftwareDir;" + [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User), [System.EnvironmentVariableTarget]::User)
+                        Write-Host "Helm has been installed and added to the current user's PATH."
 
                         $helmVersion = & "$SoftwareDir\helm.exe" version --short 2>&1
                         Write-Host "Helm version: $helmVersion"
                     }
                 }
 
-                # Refresh environment variables globally
-                $refreshEnv = [System.Runtime.InteropServices.Marshal]::PtrToStructure([System.IntPtr]::Zero, [System.Type]::GetType("System.Runtime.InteropServices.EnvironmentVariableTarget, mscorlib"))
-                Write-Host "Refreshing the environment variables globally for all processes..."
-                [Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
-
-                # Confirm that the PATH update has taken effect
-                Write-Host "Updated PATH: $newPath"
+                # Notify the user to log off and back in to apply PATH changes in their session
+                Write-Host "Installation complete. Please log off and log back in to reflect PATH changes in RDP."
