@@ -82,7 +82,7 @@ stages:
               targetType: inline
               script: |
                 $ErrorActionPreference = "Stop"
-                
+
                 # Function to relaunch script with admin privileges
                 function Run-AsAdmin {
                     if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -91,7 +91,7 @@ stages:
                         exit
                     }
                 }
-                
+
                 # Call function to check and run as admin if necessary
                 Run-AsAdmin
 
@@ -108,38 +108,45 @@ stages:
                 }
                 New-Item -ItemType Directory -Path $SoftwareDir -Force | Out-Null
 
+                # Download and install software
                 switch ($Software) {
                     "git" {
-                        $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-                        $gitPattern = "C:\cicd-tools\git\*"
-                        $pathList = $currentPath.Split(';')
-                        $newPathList = $pathList | Where-Object { $_ -notlike $gitPattern }
-                        $newPath = [string]::Join(';', $newPathList)
-
-                        Write-Host "Old Git paths removed from PATH."
-
-                        # Download and install Git with admin rights
+                        # Download Git installer
                         Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\git.exe"
                         Start-Process -FilePath "$SoftwareDir\git.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+
+                        # Add Git to PATH system-wide via registry (for persistence across sessions)
+                        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+                        $currentPath = (Get-ItemProperty -Path $regPath -Name PATH).PATH
+                        $newPath = "$SoftwareDir;$currentPath"
+                        Set-ItemProperty -Path $regPath -Name PATH -Value $newPath
+                        Write-Host "Git has been installed and added to PATH."
 
                         $gitVersion = & "$SoftwareDir\git.exe" --version 2>&1
                         Write-Host "Git version: $gitVersion"
                     }
 
                     "helm" {
-                        $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-                        $helmPattern = "C:\cicd-tools\helm\*"
-                        $pathList = $currentPath.Split(';')
-                        $newPathList = $pathList | Where-Object { $_ -notlike $helmPattern }
-                        $newPath = [string]::Join(';', $newPathList)
-
-                        Write-Host "Old Helm paths removed from PATH."
-
-                        # Download and install Helm with admin rights
+                        # Download Helm installer
                         Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\helm.exe"
                         Start-Process -FilePath "$SoftwareDir\helm.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+
+                        # Add Helm to PATH system-wide via registry
+                        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+                        $currentPath = (Get-ItemProperty -Path $regPath -Name PATH).PATH
+                        $newPath = "$SoftwareDir;$currentPath"
+                        Set-ItemProperty -Path $regPath -Name PATH -Value $newPath
+                        Write-Host "Helm has been installed and added to PATH."
 
                         $helmVersion = & "$SoftwareDir\helm.exe" version --short 2>&1
                         Write-Host "Helm version: $helmVersion"
                     }
                 }
+
+                # Refresh environment variables globally
+                $refreshEnv = [System.Runtime.InteropServices.Marshal]::PtrToStructure([System.IntPtr]::Zero, [System.Type]::GetType("System.Runtime.InteropServices.EnvironmentVariableTarget, mscorlib"))
+                Write-Host "Refreshing the environment variables globally for all processes..."
+                [Environment]::SetEnvironmentVariable("PATH", $newPath, "Machine")
+
+                # Confirm that the PATH update has taken effect
+                Write-Host "Updated PATH: $newPath"
