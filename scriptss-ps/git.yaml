@@ -1,66 +1,145 @@
-steps:
-  - task: PowerShell@2
-    displayName: Install ${{ parameters.SoftwareName }} on Windows with Admin Privileges
-    condition: eq(variables['Agent.OS'], 'Windows_NT')
-    inputs:
-      targetType: inline
-      script: |
-        $ErrorActionPreference = "Stop"
-        
-        # Function to relaunch script with admin privileges
-        function Run-AsAdmin {
-            if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-                Write-Host "Restarting script as Administrator..."
-                Start-Process powershell -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"" + $MyInvocation.MyCommand.Path + "`"") -Verb RunAs
-                exit
-            }
-        }
-        
-        # Call function to check and run as admin if necessary
-        Run-AsAdmin
+trigger: none
 
-        $Software = "${{ parameters.SoftwareName }}"
-        $AvailableSoftware = "${{ parameters.AvilableSoftware }}"
-        $SoftwareVersion = "${{ parameters.SoftwareVersion }}"
-        $artifactoryURL = "${{ parameters.artifactoryURL }}"
-        $SoftwareDir = "C:\cicd-tools\${{ parameters.SoftwareName }}\$SoftwareVersion"
+parameters:
+  - name: AgentPool
+    displayName: Select Agent pool
+    type: string
+    values:
+      - 'Test Agent'
+      - Cloud-pool
+      - Matrix-pool
+      - CICD-Pool
+      - Dihelmal-pool
+      - MAVERICKpool
 
-        if (Test-Path $SoftwareDir) {
-            Write-Host "Removing existing ${{ parameters.SoftwareName }} directory..."
-            Remove-Item -Recurse -Force $SoftwareDir
-        }
-        New-Item -ItemType Directory -Path $SoftwareDir -Force | Out-Null
+  - name: CICDPoolAgent
+    displayName: Select CICD-Pool Agent
+    type: string
+    values:
+      - none
+      - SWAZERVDEVOPS8
+      - SWAZERVDEVOPS9
+      - SWAZERVDEVOPS10
+      - value1
+      - value2
 
-        switch ($Software) {
-            "git" {
-                $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-                $gitPattern = "C:\cicd-tools\git\*"
-                $pathList = $currentPath.Split(';')
-                $newPathList = $pathList | Where-Object { $_ -notlike $gitPattern }
-                $newPath = [string]::Join(';', $newPathList)
+  - name: AvilableSoftware
+    displayName: Select Avilable Software with version
+    type: string
+    default: none
+    values:
+      - none
+      - git-2.46.0
+      - git-2.47.0
+      - helm-3.10.2
+      - helm-3.15.4
 
-                Write-Host "Old Git paths removed from PATH."
+  - name: SoftwareName
+    displayName: Software Name
+    type: string
+    default: none
+    values:
+      - none
+      - git
+      - helm
 
-                Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\git.exe"
-                Start-Process -FilePath "$SoftwareDir\git.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+  - name: SoftwareVersion
+    displayName: Software Version
+    type: string
+    default: none
+    values:
+      - none
+      - 2.46.0
+      - 2.47.0
+      - 3.10.2
+      - 3.15.4
 
-                $gitVersion = & "$SoftwareDir\git.exe" --version 2>&1
-                Write-Host "Git version: $gitVersion"
-            }
+  - name: artifactoryURL
+    type: string
+    default: https://prod.artifactory.nfcu.net/artifactory
 
-            "helm" {
-                $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-                $helmPattern = "C:\cicd-tools\helm\*"
-                $pathList = $currentPath.Split(';')
-                $newPathList = $pathList | Where-Object { $_ -notlike $helmPattern }
-                $newPath = [string]::Join(';', $newPathList)
+stages:
+  - stage: InstallSoftware
+    displayName: Install Software
+    pool:
+      name: ${{ parameters.AgentPool }}
+      demands:
+        - ${{ if eq(parameters.AgentPool, 'CICD-Pool') }}:
+            - Agent.ComputerName -equals ${{ parameters.CICDPoolAgent }}
 
-                Write-Host "Old Helm paths removed from PATH."
+    variables:
+      - group: ARTIFACTORY-GLOBAL
 
-                Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\helm.exe"
-                Start-Process -FilePath "$SoftwareDir\helm.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+    jobs:
+      - job: InstallSoftware
+        workspace:
+          clean: all
+        steps:
+          - task: PowerShell@2
+            displayName: Install ${{ parameters.SoftwareName }} on Windows with Admin Privileges
+            condition: eq(variables['Agent.OS'], 'Windows_NT')
+            inputs:
+              targetType: inline
+              script: |
+                $ErrorActionPreference = "Stop"
+                
+                # Function to relaunch script with admin privileges
+                function Run-AsAdmin {
+                    if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+                        Write-Host "Restarting script as Administrator..."
+                        Start-Process powershell -ArgumentList ("-NoProfile -ExecutionPolicy Bypass -File `"" + $MyInvocation.MyCommand.Path + "`"") -Verb RunAs
+                        exit
+                    }
+                }
+                
+                # Call function to check and run as admin if necessary
+                Run-AsAdmin
 
-                $helmVersion = & "$SoftwareDir\helm.exe" version --short 2>&1
-                Write-Host "Helm version: $helmVersion"
-            }
-        }
+                $Software = "${{ parameters.SoftwareName }}"
+                $AvailableSoftware = "${{ parameters.AvilableSoftware }}"
+                $SoftwareVersion = "${{ parameters.SoftwareVersion }}"
+                $artifactoryURL = "${{ parameters.artifactoryURL }}"
+                $SoftwareDir = "C:\cicd-tools\${{ parameters.SoftwareName }}\$SoftwareVersion"
+
+                # Check if the software directory already exists and remove it
+                if (Test-Path $SoftwareDir) {
+                    Write-Host "Removing existing ${{ parameters.SoftwareName }} directory..."
+                    Remove-Item -Recurse -Force $SoftwareDir
+                }
+                New-Item -ItemType Directory -Path $SoftwareDir -Force | Out-Null
+
+                switch ($Software) {
+                    "git" {
+                        $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+                        $gitPattern = "C:\cicd-tools\git\*"
+                        $pathList = $currentPath.Split(';')
+                        $newPathList = $pathList | Where-Object { $_ -notlike $gitPattern }
+                        $newPath = [string]::Join(';', $newPathList)
+
+                        Write-Host "Old Git paths removed from PATH."
+
+                        # Download and install Git with admin rights
+                        Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\git.exe"
+                        Start-Process -FilePath "$SoftwareDir\git.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+
+                        $gitVersion = & "$SoftwareDir\git.exe" --version 2>&1
+                        Write-Host "Git version: $gitVersion"
+                    }
+
+                    "helm" {
+                        $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+                        $helmPattern = "C:\cicd-tools\helm\*"
+                        $pathList = $currentPath.Split(';')
+                        $newPathList = $pathList | Where-Object { $_ -notlike $helmPattern }
+                        $newPath = [string]::Join(';', $newPathList)
+
+                        Write-Host "Old Helm paths removed from PATH."
+
+                        # Download and install Helm with admin rights
+                        Invoke-WebRequest -Uri "${artifactoryURL}/cicd-build-agent-local/$Software/windows/$AvailableSoftware.exe" -OutFile "$SoftwareDir\helm.exe"
+                        Start-Process -FilePath "$SoftwareDir\helm.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$SoftwareDir" -Wait -Verb RunAs
+
+                        $helmVersion = & "$SoftwareDir\helm.exe" version --short 2>&1
+                        Write-Host "Helm version: $helmVersion"
+                    }
+                }
