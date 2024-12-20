@@ -1,67 +1,68 @@
 # Define Java tool from the manifest
-$javaTool = Get-ManifestTool -Name "JDK"
+$javaTool = Get-ManifestTool -Name "Java"
 $installArgs = $($javaTool.installArgs, "/DIR=$($javaTool.installPath)")
 
 # Verify the tool's source is from Artifactory
 if ($javaTool.source -ne "artifactory") {
-    throw "Unable to install JDK. The specified source, '$($javaTool.source)', is not supported."
+    throw "Unable to install Java. The specified source, '$($javaTool.source)', is not supported."
 }
 
 # Ensure the tool exists in the manifest
 if ($null -eq $javaTool) {
-    throw "Failed to get the tool 'JDK' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
+    throw "Failed to get the tool 'Java' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
 }
 
-# Dynamically construct the Artifactory URL for the specific version of JDK
+# Dynamically construct the Artifactory URL for the specific version of Java
 $javaVersion = $javaTool.defaultVersion
-$url = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/jdk/Oracle/windows/$javaVersion/jdk-$javaVersion.zip"
+$javaUrl = "https://prod.artifactory.nfcu.net/artifactory/cicd-generic-release-local/jdk/Oracle/windows/$javaVersion/jdk-$javaVersion.zip"
 
 # Set up installation paths
-$javaPath = "C:\software\java\jdk-$javaVersion"
-$javaArchive = "$javaPath\jdk-$javaVersion.zip"
+$javaPath = "C:\software\java"
+$subPath = "$javaPath\jdk-$javaVersion"
 
-# Create directory if it does not exist
-if (-Not (Test-Path $javaPath)) {
-    Write-Host "Creating directory $javaPath"
-    New-Item -Path $javaPath -ItemType Directory
-} else {
-    Write-Host "$javaPath directory already exists"
+# Check if Java is already installed
+if (Test-Path $subPath) {
+    Write-Host "Java version $javaVersion already installed at $subPath. No action will be taken."
+    return
 }
 
-# Download and install JDK using Install-Binary
+# Download the Java ZIP file
+$zipFilePath = "$env:TEMP\jdk-$javaVersion.zip"
+Write-Host "Downloading Java version $javaVersion from $javaUrl"
 Install-Binary `
-    -Url $url `
+    -Url $javaUrl `
     -Type zip `
-    -DestinationPath $javaPath `
+    -Destination $zipFilePath `
+    -InstallArgs $installArgs `
     -ErrorAction Stop
 
-# Set JAVA_HOME environment variable
-Write-Host "Setting JAVA_HOME to: $javaPath"
-[System.Environment]::SetEnvironmentVariable('JAVA_HOME', $javaPath, [System.EnvironmentVariableTarget]::Machine)
+# Extract the ZIP file
+Write-Host "Extracting Java ZIP to $subPath"
+Expand-Archive -Path $zipFilePath -DestinationPath $subPath -Force
+Remove-Item $zipFilePath
 
-# Add JDK bin folder to the PATH environment variable
-$binPath = Join-Path $javaPath "bin"
+# Set environment variables
+Write-Host "Setting JAVA_HOME and PATH environment variables"
+$javaHomePath = $subPath
+[System.Environment]::SetEnvironmentVariable("JAVA_HOME", $javaHomePath, [System.EnvironmentVariableTarget]::Machine)
+
+$javaBinPath = Join-Path $javaHomePath "bin"
 $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
-if ($currentPath -notlike "*$binPath*") {
-    Write-Host "Adding JDK bin to system PATH"
-    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$binPath", [System.EnvironmentVariableTarget]::Machine)
+if ($currentPath -notlike "*$javaBinPath*") {
+    Write-Host "Adding Java bin to system PATH"
+    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$javaBinPath", [System.EnvironmentVariableTarget]::Machine)
 } else {
-    Write-Host "JDK bin is already in the system PATH"
+    Write-Host "Java bin is already in the system PATH"
 }
 
 # Refresh the environment variables in the current session
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
-# Verify the installation
+# Verify Java installation
 Write-Host "Verifying Java installation..."
 try {
-    & "$binPath\java.exe" -version
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to verify JDK installation with exit code $LASTEXITCODE"
-    } else {
-        Write-Host "JDK installed successfully."
-    }
+    java -version
 } catch {
-    Write-Error "Java is not installed correctly. Please check the environment variables and paths."
+    Write-Error "Java installation failed. Please check the environment variables and paths."
 }
