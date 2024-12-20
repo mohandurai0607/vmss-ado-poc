@@ -19,7 +19,6 @@ $pythonUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-rel
 # Set up installation paths
 $pythonPath = "C:\cicd-tools\python"
 $subPath = "$pythonPath\$pythonVersion"
-$pythonArchive = "$subPath\python-$pythonVersion.zip"
 
 # Check if Python is already installed
 if (Test-Path $subPath) {
@@ -27,18 +26,20 @@ if (Test-Path $subPath) {
     return
 }
 
-# Create the directory if it does not exist
-if (-Not (Test-Path $subPath)) {
-    Write-Host "Creating directory $subPath"
-    New-Item -Path $subPath -ItemType Directory
-}
-
-# Download and install Python using Install-Binary
+# Download the Python ZIP file
+$zipFilePath = "$env:TEMP\python-$pythonVersion.zip"
+Write-Host "Downloading Python version $pythonVersion from $pythonUrl"
 Install-Binary `
     -Url $pythonUrl `
     -Type zip `
-    -DestinationPath $subPath `
+    -Destination $zipFilePath `
+    -InstallArgs $installArgs `
     -ErrorAction Stop
+
+# Extract the ZIP file
+Write-Host "Extracting Python ZIP to $subPath"
+Expand-Archive -Path $zipFilePath -DestinationPath $subPath -Force
+Remove-Item $zipFilePath
 
 # Set environment variables
 Write-Host "Setting PATH and proxy environment variables"
