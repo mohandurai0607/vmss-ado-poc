@@ -14,38 +14,44 @@ if ($null -eq $mavenTool) {
 
 # Dynamically construct the Artifactory URL for the specific version of Maven
 $mavenVersion = $mavenTool.defaultVersion
-$mavenUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
+$mavenUrl = "https://prod.artifactory.nfcu.net/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
 
 # Set up installation paths
-$mavenPath = "C:\software\Maven\maven-$mavenVersion"
-$mavenArchive = "$mavenPath\maven-$mavenVersion.zip"
+$mavenPath = "C:\software\Maven"
+$subPath = "$mavenPath\maven-$mavenVersion"
 
-# Create directory if it does not exist
-if (-Not (Test-Path $mavenPath)) {
-    Write-Host "Creating directory $mavenPath"
-    New-Item -Path $mavenPath -ItemType Directory
-} else {
-    Write-Host "$mavenPath directory already exists"
+# Check if Maven is already installed
+if (Test-Path $subPath) {
+    Write-Host "Maven version $mavenVersion already installed at $subPath. No action will be taken."
+    return
 }
 
-# Download and install Maven using Install-Binary
+# Download the Maven ZIP file
+$zipFilePath = "$env:TEMP\maven-$mavenVersion.zip"
+Write-Host "Downloading Maven version $mavenVersion from $mavenUrl"
 Install-Binary `
     -Url $mavenUrl `
     -Type zip `
-    -DestinationPath $mavenPath `
+    -Destination $zipFilePath `
+    -InstallArgs $installArgs `
     -ErrorAction Stop
 
-# Set M2_HOME environment variable
-Write-Host "Setting M2_HOME to: $mavenPath"
-[System.Environment]::SetEnvironmentVariable("M2_HOME", $mavenPath, [System.EnvironmentVariableTarget]::Machine)
+# Extract the ZIP file
+Write-Host "Extracting Maven ZIP to $subPath"
+Expand-Archive -Path $zipFilePath -DestinationPath $subPath -Force
+Remove-Item $zipFilePath
 
-# Add Maven bin folder to the PATH environment variable
-$binPath = Join-Path $mavenPath "bin"
+# Set environment variables
+Write-Host "Setting M2_HOME and PATH environment variables"
+$mavenHomePath = $subPath
+[System.Environment]::SetEnvironmentVariable("M2_HOME", $mavenHomePath, [System.EnvironmentVariableTarget]::Machine)
+
+$mavenBinPath = Join-Path $mavenHomePath "bin"
 $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
-if ($currentPath -notlike "*$binPath*") {
+if ($currentPath -notlike "*$mavenBinPath*") {
     Write-Host "Adding Maven bin to system PATH"
-    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$binPath", [System.EnvironmentVariableTarget]::Machine)
+    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$mavenBinPath", [System.EnvironmentVariableTarget]::Machine)
 } else {
     Write-Host "Maven bin is already in the system PATH"
 }
@@ -53,16 +59,13 @@ if ($currentPath -notlike "*$binPath*") {
 # Refresh the environment variables in the current session
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
-# Verify the installation
+# Verify Maven installation
 Write-Host "Verifying Maven installation..."
-$mvnCmd = Join-Path $binPath "mvn.cmd"
-if (Test-Path $mvnCmd) {
-    & $mvnCmd -version
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to verify Maven installation with exit code $LASTEXITCODE"
-    } else {
-        Write-Host "Maven installed successfully."
-    }
+$mvnPath = "$mavenBinPath\mvn.cmd"
+if (Test-Path $mvnPath) {
+    Write-Host "Maven executable found at $mvnPath"
+    & $mvnPath -version
 } else {
-    Write-Error "Maven executable not found at $mvnCmd. Installation might have failed."
+    Write-Error "Maven executable not found at $mvnPath. Installation failed."
+    exit 1
 }
