@@ -1,5 +1,5 @@
 # Fetch Ant tool details from the manifest
-$antTool = Get-ManifestTool -Name "Ant"
+$antTool = "Ant"
 $installArgs = $($antTool.installArgs, "/DIR=$($antTool.installPath)")
 
 # Verify the tool's source is from Artifactory
@@ -13,20 +13,28 @@ if ($null -eq $antTool) {
 }
 
 # Dynamically construct the Artifactory URL for the specific version of Ant
-$antVersion = $antTool.defaultVersion
+#$antVersion = $antTool.defaultVersion
+$antVersion=1.10.15
 $url = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-build-agent-local/apache-ant/windows/apache-ant-$($antVersion).zip"
 
 # Define the installation path and extracted directory
 $antPath = "C:\apache-ant"
 $antExtractedPath = "$antPath\apache-ant-$($antVersion)"
+$antZipPath = "$antPath\apache-ant-$($antVersion).zip"
 
-# Use Install-Binary to handle the download and extraction
-Write-Host "Installing Ant version $antVersion from $url"
-Install-Binary `
-    -Url $url `
-    -Type Zip `
-    -DestinationPath $antPath `
-    -ErrorAction Stop
+# Create installation directory if it doesn't exist
+if (-Not (Test-Path $antPath)) {
+    Write-Host "Creating installation directory: $antPath"
+    New-Item -Path $antPath -ItemType Directory -Force
+}
+
+# Download the Ant archive using Invoke-WebRequest
+Write-Host "Downloading Ant version $antVersion from $url"
+Invoke-WebRequest -Uri $url -OutFile $antZipPath -ErrorAction Stop
+
+# Extract the downloaded ZIP file
+Write-Host "Extracting Ant archive to $antPath"
+Expand-Archive -Path $antZipPath -DestinationPath $antPath -Force
 
 # Validate the installation directory
 if (-Not (Test-Path "$antExtractedPath\bin\ant.bat")) {
@@ -49,3 +57,6 @@ try {
 } catch {
     throw "Failed to verify Apache Ant installation. Error: $_"
 }
+
+# Cleanup downloaded ZIP file
+#Remove-Item -Path $antZipPath -Force
