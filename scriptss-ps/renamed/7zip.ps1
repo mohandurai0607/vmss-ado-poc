@@ -1,14 +1,14 @@
 # Define the 7-Zip tool details
 $toolName = "7-Zip"
-$toolVersion = "21.07"  # Replace with the desired version
-$toolSource = "artifactory"  # Replace if required
-$toolBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local"
-$toolFileName = "7z-$toolVersion.zip"
+$toolVersion = "24.08"  # Updated version to match the provided URL
+$toolSource = "artifactory"  # Keep source as artifactory, as it's defined this way
+$toolBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-build-agent-local/7-zip/windows"
+$toolFileName = "7-zip-$toolVersion.exe"  # Ensure this matches the new file name
 
 # Construct the download URL
-$url = "$toolBaseUrl/7zip/windows/$toolFileName"
+$url = "$toolBaseUrl/$toolFileName"
 
-# Define the installation path and extracted directory
+# Define the installation path
 $installPath = "C:\Program Files\7-Zip"
 $downloadPath = "$installPath\$toolFileName"
 
@@ -22,15 +22,15 @@ if (-Not (Test-Path $installPath)) {
     New-Item -Path $installPath -ItemType Directory -Force
 }
 
-# Download the ZIP file
+# Download the 7-Zip executable file
 Write-Host "Downloading $toolName version $toolVersion from $url"
 Invoke-WebRequest -Uri $url -OutFile $downloadPath
 
-# Extract the ZIP file
-Write-Host "Extracting $toolName to $installPath"
-Expand-Archive -Path $downloadPath -DestinationPath $installPath -Force
+# Install 7-Zip
+Write-Host "Installing $toolName version $toolVersion"
+Start-Process -FilePath $downloadPath -ArgumentList "/S" -Wait
 
-# Verify the extraction
+# Verify the installation
 if (-Not (Test-Path "$installPath\7z.exe")) {
     throw "$toolName installation failed. The required binary file is missing in the installation directory."
 }
