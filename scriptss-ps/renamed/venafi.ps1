@@ -66,3 +66,13 @@ if (Test-Path $venafiBinary) {
     Write-Error "Venafi installation failed. Binary not found: $venafiBinary"
     exit 1
 }
+
+# Update the PATH environment variable
+Write-Host "Updating PATH environment variable to include Venafi binary directory"
+$currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+if ($currentPath -notlike "*$venafiPath\bin*") {
+    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$venafiPath\bin", [System.EnvironmentVariableTarget]::Machine)
+    Write-Host "PATH updated to include: $venafiPath\bin"
+} else {
+    Write-Host "PATH already includes: $venafiPath\bin"
+}
