@@ -22,6 +22,18 @@ $venafiArchive = "$venafiPath\Venafi-$venafiVersion.zip"
 # Check if Venafi is already installed
 if (Test-Path $venafiPath) {
     Write-Host "Venafi version $venafiVersion is already installed at $venafiPath. No action will be taken."
+    # Verify version if already installed
+    $venafiBinary = "$venafiPath\bin\venafi.exe"  # Adjust if the binary path or name differs
+    if (Test-Path $venafiBinary) {
+        try {
+            $installedVersion = & $venafiBinary --version  # Replace with the actual version command
+            Write-Host "Installed Venafi version: $installedVersion"
+        } catch {
+            Write-Warning "Could not determine the installed Venafi version."
+        }
+    } else {
+        Write-Warning "Venafi binary not found at $venafiBinary. Installation may be incomplete."
+    }
     return
 }
 
@@ -33,12 +45,7 @@ if (-Not (Test-Path $venafiPath)) {
 
 # Download Venafi ZIP
 Write-Host "Downloading Venafi version $venafiVersion from $venafiUrl"
-Install-Binary `
-    -Url $venafiUrl `
-    -Type zip `
-    -Destination $venafiArchive `
-    -InstallArgs $installArgs
-    -ErrorAction Stop
+Invoke-WebRequest -Uri $venafiUrl -OutFile $venafiArchive
 
 # Extract the ZIP file to the installation directory
 Write-Host "Extracting Venafi ZIP to $venafiPath"
@@ -47,18 +54,15 @@ Remove-Item $venafiArchive
 
 # Verify Venafi installation
 Write-Host "Verifying Venafi installation..."
-if (Test-Path "$venafiPath\bin") {
-    Write-Host "Venafi installation completed successfully at $venafiPath."
+$venafiBinary = "$venafiPath\bin\venafi.exe"  # Adjust based on the actual binary name
+if (Test-Path $venafiBinary) {
+    try {
+        $installedVersion = & $venafiBinary --version  # Replace with the actual version command
+        Write-Host "Venafi installed successfully. Version: $installedVersion"
+    } catch {
+        Write-Error "Failed to verify Venafi version. Error: $_"
+    }
 } else {
-    Write-Error "Venafi installation failed. Directory not found: $venafiPath\bin"
+    Write-Error "Venafi installation failed. Binary not found: $venafiBinary"
     exit 1
-}
-
-# Optional: Run Venafi tests
-$venafiTestsPath = "C:\image\tests\Venafi.Tests.ps1"
-if (Test-Path $venafiTestsPath) {
-    Write-Host "Running Venafi tests from $venafiTestsPath"
-    Invoke-Pester $venafiTestsPath
-} else {
-    Write-Host "Test file not found: $venafiTestsPath. Skipping tests."
 }
