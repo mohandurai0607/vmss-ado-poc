@@ -36,13 +36,8 @@ Write-Host "Extracting Maven ZIP to $mavenPath"
 if (-Not (Test-Path $mavenRootPath)) {
     New-Item -ItemType Directory -Path $mavenRootPath | Out-Null
 }
-Expand-Archive -Path $zipFilePath -DestinationPath $mavenRootPath -Force
+Expand-Archive -Path $zipFilePath -DestinationPath $mavenPath -Force
 Remove-Item $zipFilePath
-
-# Ensure extracted folder matches the version-specific folder structure
-if (Test-Path "$mavenRootPath\apache-maven-$mavenVersion") {
-    Rename-Item -Path "$mavenRootPath\apache-maven-$mavenVersion" -NewName "maven-$mavenVersion"
-}
 
 # Set environment variables
 Write-Host "Setting M2_HOME and PATH environment variables"
