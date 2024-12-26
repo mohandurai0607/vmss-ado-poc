@@ -99,7 +99,7 @@ Invoke-WebRequest -Uri $mavenUrl -OutFile $zipFilePath -UseBasicParsing
 
 # Extract Maven
 Write-Host "Extracting $toolName ZIP to $mavenRootPath"
-Expand-Archive -Path $zipFilePath -DestinationPath $mavenRootPath -Force
+Expand-Archive -Path $zipFilePath -DestinationPath $mavenPath -Force
 Remove-Item $zipFilePath
 
 # Set environment variables
