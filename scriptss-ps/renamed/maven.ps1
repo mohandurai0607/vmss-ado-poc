@@ -79,7 +79,7 @@ if (Test-Path $mvnPath) {
 $mavenTool = "Maven"
 
 # Dynamically construct the Artifactory URL for the specific version of Maven
-$mavenVersion = version
+$mavenVersion = "version"  # Replace with the actual version
 $mavenUrl = "https://prod.artifactory.nfcu.net/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
 
 # Set up installation paths
@@ -99,17 +99,21 @@ Invoke-WebRequest -Uri $mavenUrl -OutFile $zipFilePath -UseBasicParsing
 Write-Host "Maven ZIP downloaded to $zipFilePath"
 
 # Extract the ZIP file
-Write-Host "Extracting Maven ZIP to $mavenPath"
+Write-Host "Extracting Maven ZIP to $mavenRootPath"
 if (-Not (Test-Path $mavenRootPath)) {
     New-Item -ItemType Directory -Path $mavenRootPath | Out-Null
 }
 Expand-Archive -Path $zipFilePath -DestinationPath $mavenRootPath -Force
 Remove-Item $zipFilePath
 
-# Ensure extracted folder matches the version-specific folder structure
-if (Test-Path "$mavenRootPath\apache-maven-$mavenVersion") {
-    Rename-Item -Path "$mavenRootPath\apache-maven-$mavenVersion" -NewName "maven-$mavenVersion"
+# Identify the extracted folder
+$extractedFolder = Get-ChildItem -Path $mavenRootPath -Directory | Where-Object { $_.Name -match "maven|apache-maven" }
+if ($null -eq $extractedFolder) {
+    throw "Maven extraction failed. No valid folder found in $mavenRootPath."
 }
+
+# Rename the extracted folder to match the expected structure
+Rename-Item -Path $extractedFolder.FullName -NewName "maven-$mavenVersion"
 
 # Set environment variables
 Write-Host "Setting M2_HOME and PATH environment variables"
