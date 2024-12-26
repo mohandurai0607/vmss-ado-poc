@@ -19,24 +19,6 @@ $venafiUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-rel
 $venafiPath = $venafiTool.installPath
 $venafiArchive = "$venafiPath\Venafi-$venafiVersion.zip"
 
-# Check if Venafi is already installed
-if (Test-Path $venafiPath) {
-    Write-Host "Venafi version $venafiVersion is already installed at $venafiPath. No action will be taken."
-    # Verify version if already installed
-    $venafiBinary = "$venafiPath\bin\venafi.exe"  # Adjust if the binary path or name differs
-    if (Test-Path $venafiBinary) {
-        try {
-            $installedVersion = & $venafiBinary --version  # Replace with the actual version command
-            Write-Host "Installed Venafi version: $installedVersion"
-        } catch {
-            Write-Warning "Could not determine the installed Venafi version."
-        }
-    } else {
-        Write-Warning "Venafi binary not found at $venafiBinary. Installation may be incomplete."
-    }
-    return
-}
-
 # Create installation directory if it does not exist
 if (-Not (Test-Path $venafiPath)) {
     Write-Host "Creating Venafi directory: $venafiPath"
@@ -52,20 +34,20 @@ Write-Host "Extracting Venafi ZIP to $venafiPath"
 Expand-Archive -Path $venafiArchive -DestinationPath $venafiPath -Force
 Remove-Item $venafiArchive
 
-# Verify Venafi installation
-Write-Host "Verifying Venafi installation..."
-$venafiBinary = "$venafiPath\bin\venafi.exe"  # Adjust based on the actual binary name
-if (Test-Path $venafiBinary) {
-    try {
-        $installedVersion = & $venafiBinary --version  # Replace with the actual version command
-        Write-Host "Venafi installed successfully. Version: $installedVersion"
-    } catch {
-        Write-Error "Failed to verify Venafi version. Error: $_"
-    }
-} else {
-    Write-Error "Venafi installation failed. Binary not found: $venafiBinary"
-    exit 1
-}
+# # Verify Venafi installation
+# Write-Host "Verifying Venafi installation..."
+# $venafiBinary = "$venafiPath\bin\venafi.exe"  # Adjust based on the actual binary name
+# if (Test-Path $venafiBinary) {
+#     try {
+#         $installedVersion = & $venafiBinary --version  # Replace with the actual version command
+#         Write-Host "Venafi installed successfully. Version: $installedVersion"
+#     } catch {
+#         Write-Error "Failed to verify Venafi version. Error: $_"
+#     }
+# } else {
+#     Write-Error "Venafi installation failed. Binary not found: $venafiBinary"
+#     exit 1
+# }
 
 # Update the PATH environment variable
 Write-Host "Updating PATH environment variable to include Venafi binary directory"
