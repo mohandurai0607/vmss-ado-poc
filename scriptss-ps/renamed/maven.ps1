@@ -75,71 +75,49 @@ if (Test-Path $mvnPath) {
 
 ### test purpose machine -------
 
-# Define Maven tool from the manifest
-$mavenTool = "Maven"
-
-# Dynamically construct the Artifactory URL for the specific version of Maven
+# Define Maven name and version
+$toolName = "Maven"
 $mavenVersion = "version"  # Replace with the actual version
+
+# Construct the Artifactory URL
 $mavenUrl = "https://prod.artifactory.nfcu.net/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
 
 # Set up installation paths
-$mavenRootPath = "C:\software\Maven"
-$mavenPath = Join-Path $mavenRootPath "maven-$mavenVersion"
+$mavenRootPath = "C:\software\$toolName"
+$mavenPath = Join-Path $mavenRootPath "$toolName-$mavenVersion"
+$mavenBinPath = Join-Path $mavenPath "bin"
 
-# Check if Maven is already installed
-if (Test-Path $mavenPath) {
-    Write-Host "Maven version $mavenVersion already installed at $mavenPath. No action will be taken."
-    return
-}
-
-# Download the Maven ZIP file
-$zipFilePath = "$env:TEMP\maven-$mavenVersion.zip"
-Write-Host "Downloading Maven version $mavenVersion from $mavenUrl"
-Invoke-WebRequest -Uri $mavenUrl -OutFile $zipFilePath -UseBasicParsing
-Write-Host "Maven ZIP downloaded to $zipFilePath"
-
-# Extract the ZIP file
-Write-Host "Extracting Maven ZIP to $mavenRootPath"
+# Ensure the Maven root directory exists
 if (-Not (Test-Path $mavenRootPath)) {
     New-Item -ItemType Directory -Path $mavenRootPath | Out-Null
 }
+
+# Download Maven
+$zipFilePath = "$env:TEMP\$toolName-$mavenVersion.zip"
+Write-Host "Downloading $toolName version $mavenVersion from $mavenUrl"
+Invoke-WebRequest -Uri $mavenUrl -OutFile $zipFilePath -UseBasicParsing
+
+# Extract Maven
+Write-Host "Extracting $toolName ZIP to $mavenRootPath"
 Expand-Archive -Path $zipFilePath -DestinationPath $mavenRootPath -Force
 Remove-Item $zipFilePath
 
-# Identify the extracted folder
-$extractedFolder = Get-ChildItem -Path $mavenRootPath -Directory | Where-Object { $_.Name -match "maven|apache-maven" }
-if ($null -eq $extractedFolder) {
-    throw "Maven extraction failed. No valid folder found in $mavenRootPath."
-}
-
-# Rename the extracted folder to match the expected structure
-Rename-Item -Path $extractedFolder.FullName -NewName "maven-$mavenVersion"
-
 # Set environment variables
-Write-Host "Setting M2_HOME and PATH environment variables"
+Write-Host "Setting M2_HOME and PATH environment variables for $toolName"
 [System.Environment]::SetEnvironmentVariable("M2_HOME", $mavenPath, [EnvironmentVariableTarget]::Machine)
-
-$mavenBinPath = Join-Path $mavenPath "bin"
 $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-
-if ($currentPath -notlike "*$mavenBinPath*") {
-    Write-Host "Adding Maven bin to system PATH"
-    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$mavenBinPath", [EnvironmentVariableTarget]::Machine)
-} else {
-    Write-Host "Maven bin is already in the system PATH"
-}
+[System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$mavenBinPath", [EnvironmentVariableTarget]::Machine)
 
 # Refresh the environment variables in the current session
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
 # Verify Maven installation
-Write-Host "Verifying Maven installation..."
+Write-Host "Verifying $toolName installation..."
 $mvnPath = Join-Path $mavenBinPath "mvn.cmd"
 if (Test-Path $mvnPath) {
-    Write-Host "Maven executable found at $mvnPath"
+    Write-Host "$toolName installed successfully. Version details:"
     & $mvnPath -version
 } else {
-    Write-Error "Maven executable not found at $mvnPath. Installation failed."
-    exit 1
+    throw "$toolName installation failed. Maven executable not found at $mvnPath."
 }
 
