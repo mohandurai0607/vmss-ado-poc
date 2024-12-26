@@ -1,7 +1,12 @@
 # Define Maven tool from the manifest
 $mavenTool = Get-ManifestTool -Name "Maven"
 
-# Validate Maven tool configuration
+# Verify the tool's source is from Artifactory
+if ($mavenTool.source -ne "artifactory") {
+    throw "Unable to install Maven. The specified source, '$($mavenTool.source)', is not supported."
+}
+
+# Ensure the tool exists in the manifest
 if ($null -eq $mavenTool) {
     throw "Failed to get the tool 'Maven' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
 }
@@ -73,11 +78,6 @@ if (Test-Path $mvnPath) {
 # Define Maven tool from the manifest
 $mavenTool = "Maven"
 
-# Validate Maven tool configuration
-if ($null -eq $mavenTool) {
-    throw "Failed to get the tool 'Maven' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
-}
-
 # Dynamically construct the Artifactory URL for the specific version of Maven
 $mavenVersion = version
 $mavenUrl = "https://prod.artifactory.nfcu.net/artifactory/cicd-generic-release-local/maven/$mavenVersion/windows/maven-$mavenVersion.zip"
@@ -138,5 +138,4 @@ if (Test-Path $mvnPath) {
     Write-Error "Maven executable not found at $mvnPath. Installation failed."
     exit 1
 }
-
 
