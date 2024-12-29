@@ -5,8 +5,7 @@ $dockerVersion = "24.0.5"  # Replace with the desired Docker version
 $dockerZipUrl = "https://download.docker.com/win/static/stable/x86_64/docker-$dockerVersion.zip"
 
 # Set installation paths and temporary file location
-#$dockerZipPath = "$env:TEMP\docker-$dockerVersion.zip"
-$dockerZipPath = "C:\Software"
+$dockerZipPath = "$env:TEMP\docker-$dockerVersion.zip"
 $dockerExtractPath = "C:\Program Files\Docker"
 $dockerBinPath = "$dockerExtractPath\docker"
 
@@ -41,16 +40,13 @@ if (-Not (Test-Path $dockerExtractPath)) {
 Expand-Archive -Path $dockerZipPath -DestinationPath $dockerExtractPath -Force
 Write-Host "Docker extracted to $dockerExtractPath"
 
-# Verify installation
-Write-Host "Verifying Docker installation..."
-try {
-    Invoke-Expression $dockerCheckCommand | Out-Null
-    Write-Host "Docker installed successfully. Version:"
-    Invoke-Expression $dockerCheckCommand
-} catch {
-    Write-Error "Docker installation failed. Please check the logs or re-run the script."
+# Verify the binary exists
+if (-Not (Test-Path "$dockerBinPath\docker.exe")) {
+    Write-Error "Docker executable not found in $dockerBinPath. Extraction may have failed."
     exit 1
 }
+
+
 
 # Set environment variables
 Write-Host "Updating PATH environment variable to include Docker binary directory..."
