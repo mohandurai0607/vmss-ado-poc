@@ -1,49 +1,54 @@
-# Docker Desktop Installation Script for Windows
+# Docker Desktop Installation Script for Windows (Zip-based)
 
 # Define Docker Desktop details
-$dockerToolName = "DockerDesktop"
-$dockerVersion = "4.24.0"  # Replace with the desired Docker Desktop version
-$dockerUrl = "https://desktop.docker.com/win/stable/$dockerVersion/Docker%20Desktop%20Installer.exe"
+$dockerVersion = "24.0.5"  # Replace with the desired Docker version
+$dockerZipUrl = "https://download.docker.com/win/static/stable/x86_64/docker-$dockerVersion.zip"
 
 # Set installation paths and temporary file location
-$dockerInstallerPath = "$env:TEMP\DockerDesktopInstaller.exe"
-$dockerBinPath = "C:\Program Files\Docker\Docker\resources\bin"
+#$dockerZipPath = "$env:TEMP\docker-$dockerVersion.zip"
+$dockerZipPath = "C:\Software"
+$dockerExtractPath = "C:\Program Files\Docker"
+$dockerBinPath = "$dockerExtractPath\docker"
 
-# Check if Docker Desktop is already installed
-Write-Host "Checking if Docker Desktop is already installed..."
-$dockerCheckCommand = "docker --version"
+# Check if Docker is already installed
+Write-Host "Checking if Docker is already installed..."
+$dockerCheckCommand = "$dockerBinPath\docker --version"
 $dockerInstalled = $false
 
 try {
     Invoke-Expression $dockerCheckCommand | Out-Null
     $dockerInstalled = $true
-    Write-Host "Docker Desktop is already installed. Version:"
+    Write-Host "Docker is already installed. Version:"
     Invoke-Expression $dockerCheckCommand
 } catch {
-    Write-Host "Docker Desktop is not installed. Proceeding with installation."
+    Write-Host "Docker is not installed. Proceeding with installation."
 }
 
 if ($dockerInstalled) {
     return
 }
 
-# Download Docker Desktop installer
-Write-Host "Downloading Docker Desktop version $dockerVersion from $dockerUrl..."
-Invoke-WebRequest -Uri $dockerUrl -OutFile $dockerInstallerPath -UseBasicParsing
-Write-Host "Docker Desktop installer downloaded to $dockerInstallerPath"
+# Download Docker zip
+Write-Host "Downloading Docker version $dockerVersion from $dockerZipUrl..."
+Invoke-WebRequest -Uri $dockerZipUrl -OutFile $dockerZipPath -UseBasicParsing
+Write-Host "Docker zip downloaded to $dockerZipPath"
 
-# Install Docker Desktop
-Write-Host "Starting Docker Desktop installation..."
-Start-Process -FilePath $dockerInstallerPath -ArgumentList "/quiet" -Wait
+# Extract Docker zip
+Write-Host "Extracting Docker zip to $dockerExtractPath..."
+if (-Not (Test-Path $dockerExtractPath)) {
+    New-Item -Path $dockerExtractPath -ItemType Directory | Out-Null
+}
+Expand-Archive -Path $dockerZipPath -DestinationPath $dockerExtractPath -Force
+Write-Host "Docker extracted to $dockerExtractPath"
 
 # Verify installation
-Write-Host "Verifying Docker Desktop installation..."
+Write-Host "Verifying Docker installation..."
 try {
     Invoke-Expression $dockerCheckCommand | Out-Null
-    Write-Host "Docker Desktop installed successfully. Version:"
+    Write-Host "Docker installed successfully. Version:"
     Invoke-Expression $dockerCheckCommand
 } catch {
-    Write-Error "Docker Desktop installation failed. Please check the logs or re-run the script."
+    Write-Error "Docker installation failed. Please check the logs or re-run the script."
     exit 1
 }
 
@@ -61,6 +66,6 @@ if ($currentPath -notlike "*$dockerBinPath*") {
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
 # Clean up installer
-Write-Host "Cleaning up installer file..."
-Remove-Item -Path $dockerInstallerPath -Force
+Write-Host "Cleaning up zip file..."
+Remove-Item -Path $dockerZipPath -Force
 Write-Host "Installation completed successfully!"
