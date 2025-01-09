@@ -1,9 +1,11 @@
 # Define Docker download details
 $dockerVersion = "27.4.1"  # Replace with the desired version
-$dockerUrl = "https://download.docker.com/win/static/stable/x86_64/docker-$dockerVersion.zip"
+#$dockerUrl = "https://download.docker.com/win/static/stable/x86_64/docker-$dockerVersion.zip"
+
+$dockerUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/docker/windows/$dockerVersion/docker-$dockerVersion.zip"
 
 # Define installation paths
-$customPath = "C:\Tools\Docker"
+$customPath = "C:\cicd-tools\Docker"
 $dockerZipPath = "$env:TEMP\docker-$dockerVersion.zip"
 $dockerExtractPath = "$customPath\$dockerVersion"
 
