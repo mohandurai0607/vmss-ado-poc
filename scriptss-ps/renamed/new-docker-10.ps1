@@ -98,3 +98,6 @@ try {
 } catch {
     throw "Docker installation failed. Please check the environment variables and paths."
 }
+
+
+& "C:\Tools\Docker\install-docker-ce.ps1" -DockerPath "C:\Tools\Docker\27.4.1\docker\docker.exe" -DockerDPath "C:\Tools\Docker\27.4.1\docker\dockerd.exe"
