@@ -1,5 +1,4 @@
-
-$SqlServerModuleVersion = "21.1.18235"
+$SqlServerModuleVersion = "21.1.18256"
 
 # Check if the module is already installed
 $module = Get-Module -ListAvailable -Name SqlServer
@@ -10,15 +9,15 @@ if ($module -and ($module.Version -eq $SqlServerModuleVersion)) {
     # Ensure NuGet provider is available
     if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
         Write-Host "Installing NuGet provider..."
-        Install-PackageProvider -Name NuGet -Force
+        Install-PackageProvider -Name NuGet -Force -Confirm:$false
     }
 
-    # Install the specific version of the SqlServer module
+    # Install the specific version of the SqlServer module with no prompt
     Write-Host "Installing SqlServer module version $SqlServerModuleVersion..."
-    Install-Module -Name SqlServer -RequiredVersion $SqlServerModuleVersion -AllowClobber -Force
+    Install-Module -Name SqlServer -RequiredVersion $SqlServerModuleVersion -AllowClobber -Force -Confirm:$false
 
     # Import the module
-    Import-Module SqlServer
+    Import-Module SqlServer -Force
 
     # Verify installation
     if (Get-Module -ListAvailable -Name SqlServer) {
