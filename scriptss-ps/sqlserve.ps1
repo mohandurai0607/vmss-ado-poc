@@ -1,30 +1,35 @@
-$SqlServerModuleVersion = "21.1.18256"
+$SqlServerModuleVersion = "21.1.18235"
 
-# Check if the module is already installed
-$module = Get-Module -ListAvailable -Name SqlServer
-
-if ($module -and ($module.Version -eq $SqlServerModuleVersion)) {
-    Write-Host "SqlServer module version $SqlServerModuleVersion is already installed."
+# Check if NuGet provider is installed; if not, install it
+$nuget = Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue
+if (-not $nuget) {
+    Write-Host "NuGet provider is not installed. Installing NuGet provider..."
+    Install-PackageProvider -Name NuGet -Force -Confirm:$false
 } else {
-    # Ensure NuGet provider is available
-    if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing NuGet provider..."
-        Install-PackageProvider -Name NuGet -Force -Confirm:$false
+    Write-Host "NuGet provider is already installed."
+}
+
+# Uninstall all installed versions of the SqlServer module if present
+$installedModules = Get-Module -ListAvailable -Name SqlServer
+if ($installedModules) {
+    Write-Host "Uninstalling existing SqlServer module versions..."
+    foreach ($mod in $installedModules) {
+        Uninstall-Module -Name SqlServer -AllVersions -Force -Confirm:$false
     }
+}
 
-    # Install the specific version of the SqlServer module with no prompt
-    Write-Host "Installing SqlServer module version $SqlServerModuleVersion..."
-    Install-Module -Name SqlServer -RequiredVersion $SqlServerModuleVersion -AllowClobber -Force -Confirm:$false
+# Install the specific version of the SqlServer module without prompting
+Write-Host "Installing SqlServer module version $SqlServerModuleVersion..."
+Install-Module -Name SqlServer -RequiredVersion $SqlServerModuleVersion -AllowClobber -Force -Confirm:$false
 
-    # Import the module
-    Import-Module SqlServer -Force
+# Import the module
+Import-Module SqlServer -Force
 
-    # Verify installation
-    if (Get-Module -ListAvailable -Name SqlServer) {
-        Write-Host "SqlServer module version $SqlServerModuleVersion installed successfully."
-    } else {
-        Write-Host "Failed to install the SqlServer module. Please check for errors."
-    }
+# Verify installation
+if (Get-Module -ListAvailable -Name SqlServer | Where-Object { $_.Version -eq $SqlServerModuleVersion }) {
+    Write-Host "SqlServer module version $SqlServerModuleVersion installed successfully."
+} else {
+    Write-Host "Failed to install the SqlServer module. Please check for errors."
 }
 
 # Test Invoke-Sqlcmd availability
