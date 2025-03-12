@@ -1,4 +1,4 @@
-# Define the global profile path at $PSHOME\Profile.ps1
+# Define the global profile path
 $globalProfile = "$PSHOME\Profile.ps1"
 
 # Ensure the profile script exists
@@ -8,16 +8,18 @@ if (!(Test-Path -Path $globalProfile)) {
 
 # Artifactory Repository Registration Configuration
 $repoConfig = @"
+# ==========================
 # Register Artifactory NuGet Repository for All Users and Hosts
+# ==========================
 
 # Define repository parameters
-\$parameters = @{
+`$parameters = @{
 
     Name               = "Artifactory"
     SourceLocation     = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/cicd-md-local"
     PublishLocation    = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/cicd-md-local"
     InstallationPolicy = "Trusted"
-    Verbose            = \$True
+    Verbose            = `$True
 }
 
 # Ensure TLS 1.2 is enabled
@@ -29,18 +31,32 @@ Write-Host "Ensuring minimum NuGet package provider is installed"
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 
 # Register the repository if not already registered
-if (!(Get-PSRepository -Name \$parameters.Name -ErrorAction SilentlyContinue)) {
-    Write-Host "Registering PowerShell Repository \$parameters.Name (\$parameters.SourceLocation)"
+if (!(Get-PSRepository -Name `$parameters.Name -ErrorAction SilentlyContinue)) {
+    Write-Host "Registering PowerShell Repository `$parameters.Name (`$parameters.SourceLocation)"
     Register-PSRepository @parameters 
 } else {
-    Write-Host "Repository '\$parameters.Name' is already registered."
+    Write-Host "Repository '`$parameters.Name' is already registered."
 }
 
-# Optimize PowerShell startup performance
+# ==========================
+# Optimize PowerShell Startup Performance
+# ==========================
+
 Write-Host 'Configuring PSModuleAnalysisCachePath for faster module analysis'
-\$env:PSModuleAnalysisCachePath = 'C:\PSModuleAnalysisCachePath\ModuleAnalysisCache'
-[Environment]::SetEnvironmentVariable('PSModuleAnalysisCachePath', \$env:PSModuleAnalysisCachePath, "Machine")
-New-Item -Path \$env:PSModuleAnalysisCachePath -ItemType 'File' -Force | Out-Null
+
+# Define the PSModuleAnalysisCachePath
+`$PSModuleAnalysisCachePath = "C:\PSModuleAnalysisCachePath\ModuleAnalysisCache"
+
+# Set the environment variable correctly
+[Environment]::SetEnvironmentVariable("PSModuleAnalysisCachePath", `$PSModuleAnalysisCachePath, "Machine")
+
+# Make variable available in the current session
+`$env:PSModuleAnalysisCachePath = `$PSModuleAnalysisCachePath
+
+# Ensure the directory exists
+if (!(Test-Path -Path `$PSModuleAnalysisCachePath)) {
+    New-Item -Path `$PSModuleAnalysisCachePath -ItemType Directory -Force | Out-Null
+}
 
 # Display the registered repositories
 Get-PSRepository
