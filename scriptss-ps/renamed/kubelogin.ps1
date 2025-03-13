@@ -19,7 +19,7 @@ $url = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-l
 # Define the installation path and installation file path
 $installPath = "C:\Program Files\kubelogin"
 $kubeloginExePath = "$installPath\kubelogin.exe"
-$tempKubeloginPath = "$env:TEMP\kubelogin-$($kubeloginVersion).exe"
+$tempKubeloginPath = "$env:TEMP\kubelogin.exe"
 
 # Create installation directory if it doesn't exist
 if (-Not (Test-Path $installPath)) {
@@ -68,7 +68,7 @@ $url = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-l
 # Define the installation path and installation file path
 $installPath = "C:\Program Files\kubelogin"
 $kubeloginExePath = "$installPath\kubelogin.exe"
-$tempKubeloginPath = "$env:TEMP\kubelogin-$($kubeloginVersion).exe"
+$tempKubeloginPath = "$env:TEMP\kubelogin.exe"
 
 # Create installation directory if it doesn't exist
 if (-Not (Test-Path $installPath)) {
