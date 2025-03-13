@@ -68,5 +68,35 @@ Set-Content -Path $globalProfile -Value $repoConfig
 # Load the profile immediately
 . $globalProfile
 
+--------------------
+
+Describe "PowerShell Repository Configuration" {
+
+    Context "Artifactory Repository Registration" {
+        It "Artifactory repository should be registered" {
+            $repo = Get-PSRepository -Name "Artifactory" -ErrorAction SilentlyContinue
+            $repo | Should -Not -BeNullOrEmpty
+        }
+
+        It "Artifactory repository should have correct source URL" {
+            $repo = Get-PSRepository -Name "Artifactory" -ErrorAction SilentlyContinue
+            $repo.SourceLocation | Should -Be "https://prod.artifactory.nfcu.net/artifactory/api/nuget/cicd-md-local"
+        }
+    }
+
+    Context "Package Installation Test" {
+        It "Should install a test package from the Artifactory repository" {
+            Install-Module -Name "Pester" -Repository "Artifactory" -Force -AllowClobber -ErrorAction Stop
+            $module = Get-Module -ListAvailable -Name "Pester"
+            $module | Should -Not -BeNullOrEmpty
+        }
+    }
+
+}
+
+# Run Pester test
+Invoke-Pester C:\image\tests\Congure-PowershellProfile.Tests.ps1
+
+
 # Verify repository registration
 Get-PSRepository
