@@ -68,6 +68,10 @@ Set-Content -Path $globalProfile -Value $repoConfig
 # Load the profile immediately
 . $globalProfile
 
+
+# Verify repository registration
+Get-PSRepository
+
 --------------------
 
 Describe "PowerShell Repository Configuration" {
@@ -96,7 +100,3 @@ Describe "PowerShell Repository Configuration" {
 
 # Run Pester test
 Invoke-Pester C:\image\tests\Congure-PowershellProfile.Tests.ps1
-
-
-# Verify repository registration
-Get-PSRepository
