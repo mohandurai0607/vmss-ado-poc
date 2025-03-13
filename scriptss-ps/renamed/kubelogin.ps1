@@ -106,3 +106,66 @@ try {
 }
 
 Write-Host "kubelogin installation completed successfully."
+#---------------
+
+Describe "kubelogin" {
+    $kubeloginToolManifest = Get-ManifestTool -Name "kubelogin"
+
+    $targetVersion = "v$($kubeloginToolManifest.defaultVersion)"
+    $kubeloginPath = "C:\Program Files\kubelogin\kubelogin.exe"
+
+    Context "kubelogin installation" {
+        It "kubelogin executable should exist in $kubeloginPath" {
+            Test-Path $kubeloginPath | Should -Be $true
+        }
+    }
+
+    Context "kubelogin version" {
+        It "kubelogin version should match manifest version $($kubeloginToolManifest.defaultVersion)" -TestCases $targetVersion {
+            $versionOutput = (cmd /c "kubelogin --version")
+            $versionMatch = $versionOutput -match "v([\d\.]+)/"
+
+            if ($versionMatch) {
+                $extractedVersion = "v" + $matches[1]
+                $extractedVersion | Should -Be $targetVersion
+            } else {
+                throw "Failed to extract kubelogin version. Output: $versionOutput"
+            }
+        }
+    }
+
+    Context "kubelogin functionality" {
+        It "kubelogin should return a valid help message" {
+            $helpOutput = (cmd /c "kubelogin --help")
+            $helpOutput | Should -Match "Usage: kubelogin"
+        }
+
+        It "kubelogin should execute successfully with exit code 0" {
+            $process = Start-Process -FilePath $kubeloginPath -ArgumentList "--help" -NoNewWindow -PassThru -Wait
+            $process.ExitCode | Should -Be 0
+        }
+    }
+
+    Context "kubelogin environment variables" {
+        It "KUBECONFIG should be set if present" {
+            if ($env:KUBECONFIG) {
+                $env:KUBECONFIG | Should -Not -BeNullOrEmpty
+                Write-Host "KUBECONFIG is set to: $env:KUBECONFIG"
+            } else {
+                Write-Host "KUBECONFIG is not set, skipping test."
+            }
+        }
+
+        It "KUBECTL_CACHE_DIR should be set if present" {
+            if ($env:KUBECTL_CACHE_DIR) {
+                $env:KUBECTL_CACHE_DIR | Should -Not -BeNullOrEmpty
+                Write-Host "KUBECTL_CACHE_DIR is set to: $env:KUBECTL_CACHE_DIR"
+            } else {
+                Write-Host "KUBECTL_CACHE_DIR is not set, skipping test."
+            }
+        }
+    }
+}
+
+# Run Pester test
+Invoke-Pester C:\image\tests\kubelogin.Tests.ps1
