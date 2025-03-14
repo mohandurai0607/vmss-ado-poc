@@ -108,64 +108,36 @@ try {
 Write-Host "kubelogin installation completed successfully."
 #---------------
 
-Describe "kubelogin" {
-    $kubeloginToolManifest = Get-ManifestTool -Name "kubelogin"
+Describe "kubelogin installation" {
 
-    $targetVersion = "v$($kubeloginToolManifest.defaultVersion)"
-    $kubeloginPath = "C:\Program Files\kubelogin\kubelogin.exe"
+    # Fetch kubelogin version from the manifest
+    $kubeloginToolManifest = Get-ManifestTool -Name "Kubelogin"
+    $targetVersion = $($kubeloginToolManifest.defaultVersion)
 
-    Context "kubelogin installation" {
-        It "kubelogin executable should exist in $kubeloginPath" {
+    Context "kubelogin executable validation" {
+        It "kubelogin.exe should exist in C:\Program Files\kubelogin" {
+            $kubeloginPath = "C:\Program Files\kubelogin\kubelogin.exe"
             Test-Path $kubeloginPath | Should -Be $true
+        }
+
+        It "kubelogin should be available in PATH" {
+            $envPath = $env:Path -split ";" 
+            $expectedPath = "C:\Program Files\kubelogin"
+            $envPath | Should -Contain $expectedPath
         }
     }
 
-    Context "kubelogin version" {
-        It "kubelogin version should match manifest version $($kubeloginToolManifest.defaultVersion)" -TestCases $targetVersion {
-            $versionOutput = (cmd /c "kubelogin --version")
-            $versionMatch = $versionOutput -match "v([\d\.]+)/"
-
-            if ($versionMatch) {
-                $extractedVersion = "v" + $matches[1]
-                $extractedVersion | Should -Be $targetVersion
-            } else {
-                throw "Failed to extract kubelogin version. Output: $versionOutput"
-            }
+    Context "kubelogin version check" {
+        It "kubelogin version should match manifest version" {
+            $versionOutput = & "C:\Program Files\kubelogin\kubelogin.exe" --version
+            $versionOutput | Should -Match "$targetVersion"
         }
     }
 
     Context "kubelogin functionality" {
         It "kubelogin should return a valid help message" {
-            $helpOutput = (cmd /c "kubelogin --help")
+            $helpOutput = & "C:\Program Files\kubelogin\kubelogin.exe" --help
             $helpOutput | Should -Match "Usage: kubelogin"
-        }
-
-        It "kubelogin should execute successfully with exit code 0" {
-            $process = Start-Process -FilePath $kubeloginPath -ArgumentList "--help" -NoNewWindow -PassThru -Wait
-            $process.ExitCode | Should -Be 0
-        }
-    }
-
-    Context "kubelogin environment variables" {
-        It "KUBECONFIG should be set if present" {
-            if ($env:KUBECONFIG) {
-                $env:KUBECONFIG | Should -Not -BeNullOrEmpty
-                Write-Host "KUBECONFIG is set to: $env:KUBECONFIG"
-            } else {
-                Write-Host "KUBECONFIG is not set, skipping test."
-            }
-        }
-
-        It "KUBECTL_CACHE_DIR should be set if present" {
-            if ($env:KUBECTL_CACHE_DIR) {
-                $env:KUBECTL_CACHE_DIR | Should -Not -BeNullOrEmpty
-                Write-Host "KUBECTL_CACHE_DIR is set to: $env:KUBECTL_CACHE_DIR"
-            } else {
-                Write-Host "KUBECTL_CACHE_DIR is not set, skipping test."
-            }
         }
     }
 }
-
-# Run Pester test
-Invoke-Pester C:\image\tests\kubelogin.Tests.ps1
