@@ -68,12 +68,6 @@ if (!(Test-Path -Path $PSModuleAnalysisCachePath)) {
 
 Write-Host "PowerShell configuration for all users completed successfully."
 
-# Append the repository configuration to the global profile
-Set-Content -Path $globalProfile -Value $repoConfig
-
-# Load the profile immediately
-. $globalProfile
-
 ### --------------------
 
 Describe "PowerShell Repository Configuration" {
