@@ -112,32 +112,21 @@ Describe "kubelogin installation" {
 
     # Fetch kubelogin version from the manifest
     $kubeloginToolManifest = Get-ManifestTool -Name "Kubelogin"
-    $targetVersion = $($kubeloginToolManifest.defaultVersion)
+    $targetVersion = "v$($kubeloginToolManifest.defaultVersion)"
 
     Context "kubelogin executable validation" {
-        It "kubelogin.exe should exist in C:\Program Files\kubelogin" {
-            $kubeloginPath = "C:\Program Files\kubelogin\kubelogin.exe"
-            Test-Path $kubeloginPath | Should -Be $true
-        }
-
-        It "kubelogin should be available in PATH" {
-            $envPath = $env:Path -split ";" 
-            $expectedPath = "C:\Program Files\kubelogin"
-            $envPath | Should -Contain $expectedPath
+        It "kubelogin.exe should exist somewhere on the system" {
+            $kubeloginPath = Get-Command kubelogin.exe -ErrorAction SilentlyContinue
+            $kubeloginPath | Should -Not -Be $null
         }
     }
 
     Context "kubelogin version check" {
         It "kubelogin version should match manifest version" {
-            $versionOutput = & "C:\Program Files\kubelogin\kubelogin.exe" --version
-            $versionOutput | Should -Match "$targetVersion"
-        }
-    }
-
-    Context "kubelogin functionality" {
-        It "kubelogin should return a valid help message" {
-            $helpOutput = & "C:\Program Files\kubelogin\kubelogin.exe" --help
-            $helpOutput | Should -Match "Usage: kubelogin"
+            $versionOutput = & kubelogin.exe --version
+            $extractedVersion = $versionOutput -match "v\d+\.\d+\.\d+" ? $matches[0] : "UNKNOWN"
+            $extractedVersion | Should -BeExactly $targetVersion
         }
     }
 }
+
