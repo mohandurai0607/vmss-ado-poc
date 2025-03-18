@@ -124,9 +124,14 @@ Describe "kubelogin installation" {
     Context "kubelogin version check" {
         It "kubelogin version should match manifest version" {
             $versionOutput = & kubelogin.exe --version
-            $extractedVersion = $versionOutput -match "v\d+\.\d+\.\d+" ? $matches[0] : "UNKNOWN"
+            if ($versionOutput -match "v\d+\.\d+\.\d+") {
+                $extractedVersion = $matches[0]
+            } else {
+                $extractedVersion = "UNKNOWN"
+            }
             $extractedVersion | Should -BeExactly $targetVersion
         }
     }
 }
+
 
