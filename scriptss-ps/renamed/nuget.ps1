@@ -5,41 +5,22 @@ Write-Host "Ensuring TLS1.2 is configured for use..."
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
 # ==========================
-# Define NuGet CLI Source from JFrog
+# Download NuGet CLI from JFrog (Temporary Use)
 # ==========================
-$NuGetExePath = "$env:ProgramFiles\NuGet\nuget.exe"
-$NuGetFolderPath = "$env:ProgramFiles\NuGet"
+$NuGetExePath = "$env:TEMP\nuget.exe"
 $NuGetFromJFrogUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/nuget/windows/nuget.exe"
 
-# Check if NuGet CLI exists, otherwise download from JFrog
+# Download NuGet.exe if not already present
 if (!(Test-Path $NuGetExePath)) {
-    Write-Host "NuGet CLI not found. Downloading from JFrog..."
-    
-    # Ensure directory exists
-    New-Item -ItemType Directory -Path $NuGetFolderPath -Force | Out-Null
-
-    # Download nuget.exe from JFrog
+    Write-Host "Downloading NuGet CLI from JFrog..."
     Invoke-WebRequest -Uri $NuGetFromJFrogUrl -OutFile $NuGetExePath
     Write-Host "NuGet CLI downloaded successfully."
 } else {
-    Write-Host "NuGet CLI is already installed."
+    Write-Host "NuGet CLI already exists in TEMP."
 }
 
 # ==========================
-# Add NuGet CLI to System PATH
-# ==========================
-$CurrentPath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-if ($CurrentPath -notlike "*$NuGetFolderPath*") {
-    Write-Host "Adding NuGet CLI to System PATH..."
-    [System.Environment]::SetEnvironmentVariable("Path", "$CurrentPath;$NuGetFolderPath", "Machine")
-} else {
-    Write-Host "NuGet CLI is already in the System PATH."
-}
-# Reload PATH for current session
-$env:Path += ";$NuGetFolderPath"
-
-# ==========================
-# Configure JFrog Artifactory as a System-Wide NuGet Source
+# Configure JFrog Artifactory as a NuGet Source
 # ==========================
 $NuGetSourceName = "Artifactory"
 $NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget-remote/index.json"
@@ -54,10 +35,16 @@ if (!(Test-Path $NuGetConfigDir)) {
     New-Item -ItemType Directory -Path $NuGetConfigDir -Force | Out-Null
 }
 
-# Ensure NuGet Config File Exists
-if (!(Test-Path $NuGetConfigPath)) {
-    Write-Host "NuGet config file not found. Creating a new one."
-    New-Item -ItemType File -Path $NuGetConfigPath -Force | Out-Null
+# Ensure NuGet Config File Exists and Has a Valid Structure
+if (!(Test-Path $NuGetConfigPath) -or [string]::IsNullOrWhiteSpace((Get-Content $NuGetConfigPath -Raw))) {
+    Write-Host "NuGet config file not found or invalid. Creating a valid one."
+    @"
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+    </packageSources>
+</configuration>
+"@ | Set-Content -Path $NuGetConfigPath -Encoding UTF8 -Force
 }
 
 # Remove Existing NuGet Source (if already exists)
@@ -66,17 +53,15 @@ if (& $NuGetExePath sources list -ConfigFile $NuGetConfigPath | Select-String -P
     & $NuGetExePath sources Remove -Name $NuGetSourceName -ConfigFile $NuGetConfigPath
 }
 
-# Add JFrog Artifactory as a System-Wide NuGet Source
+# Add JFrog Artifactory as a NuGet Source
 Write-Host "Adding JFrog Artifactory NuGet Source: $NuGetSourceName"
 & $NuGetExePath sources Add -Name $NuGetSourceName -Source $NuGetSourceUrl -ConfigFile $NuGetConfigPath
 
 # Verify NuGet Sources
-Write-Host "Listing all registered system-wide NuGet sources:"
+Write-Host "Listing all registered NuGet sources:"
 & $NuGetExePath sources List -ConfigFile $NuGetConfigPath
 
-Write-Host "NuGet CLI installation and repository registration completed successfully!"
-
-
+Write-Host "NuGet configuration completed successfully!"
 
 
 # # ==========================
