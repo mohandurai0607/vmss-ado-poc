@@ -12,13 +12,8 @@ Write-Host "Ensuring TLS1.2 is configured for use..."
 $NuGetSourceName = "Artifactory"
 $NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget-remote/index.json"
 
-# Define Machine-Wide NuGet Config Path (Correct location for all users)
-$NuGetConfigPath = "$env:ProgramData\NuGet\Config\NuGet.Config"
-
-# Ensure the Config Directory Exists
-if (!(Test-Path "$env:ProgramData\NuGet\Config\")) {
-    New-Item -ItemType Directory -Path "$env:ProgramData\NuGet\Config\" -Force
-}
+# Define Machine-Wide NuGet Config Path
+$NuGetConfigPath = "C:\ProgramData\NuGet\Config\NuGet.Config"
 
 # Remove Existing NuGet Source (if already exists)
 if (nuget sources list -ConfigFile $NuGetConfigPath | Select-String -Pattern $NuGetSourceName) {
