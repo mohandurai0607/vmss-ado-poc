@@ -13,12 +13,24 @@ $NuGetSourceName = "Artifactory"
 $NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget-remote/index.json"
 
 # Define Machine-Wide NuGet Config Path
-$NuGetConfigPath = "C:\ProgramData\NuGet\Config\NuGet.Config"
+$NuGetConfigDir = "C:\ProgramData\NuGet\Config"
+$NuGetConfigPath = "$NuGetConfigDir\NuGet.Config"
+
+# Ensure the Config Directory Exists
+if (!(Test-Path $NuGetConfigDir)) {
+    Write-Host "Creating NuGet config directory at $NuGetConfigDir"
+    New-Item -ItemType Directory -Path $NuGetConfigDir -Force
+}
 
 # Remove Existing NuGet Source (if already exists)
-if (nuget sources list -ConfigFile $NuGetConfigPath | Select-String -Pattern $NuGetSourceName) {
-    Write-Host "Removing existing NuGet source: $NuGetSourceName"
-    nuget sources Remove -Name $NuGetSourceName -ConfigFile $NuGetConfigPath
+if (Test-Path $NuGetConfigPath) {
+    if (nuget sources list -ConfigFile $NuGetConfigPath | Select-String -Pattern $NuGetSourceName) {
+        Write-Host "Removing existing NuGet source: $NuGetSourceName"
+        nuget sources Remove -Name $NuGetSourceName -ConfigFile $NuGetConfigPath
+    }
+} else {
+    Write-Host "NuGet config file not found. Creating a new one."
+    New-Item -ItemType File -Path $NuGetConfigPath -Force
 }
 
 # Add JFrog Artifactory as a System-Wide NuGet Source
