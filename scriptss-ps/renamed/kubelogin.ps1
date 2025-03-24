@@ -149,6 +149,9 @@ BeforeAll {
     $softwarePath = "C:\software"
     $kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$($kubeloginTool.defaultVersion)"
     $kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
+
+    # Make sure the variable is globally available
+    Set-Variable -Name "kubeloginExePath" -Value $kubeloginExePath -Scope Global
 }
 
 Describe "kubelogin Installation Validation" {
@@ -166,4 +169,5 @@ Describe "kubelogin Installation Validation" {
         }
     }
 }
+
 
