@@ -82,11 +82,9 @@ $kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$kubeloginVersion"
 $downloadUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/kubelogin/$kubeloginVersion/windows/kubelogin.exe"
 $kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
 
-# Create the directory if it doesn't exist
-if (-Not (Test-Path $kubeloginPath)) {
-    Write-Host "Creating installation directory: $kubeloginPath"
-    New-Item -Path $kubeloginPath -ItemType Directory -Force
-}
+# Create installation directory (without checking existence)
+Write-Host "Creating installation directory: $kubeloginPath"
+New-Item -Path $kubeloginPath -ItemType Directory -Force
 
 # Download kubelogin
 Write-Host "Downloading kubelogin version $kubeloginVersion from Artifactory"
@@ -101,23 +99,15 @@ if (-Not (Test-Path $kubeloginExePath)) {
     throw "kubelogin installation failed. The required binary file is missing in the installation directory."
 }
 
-# Update the PATH environment variable
+# Directly set the PATH variable (without checking if it already exists)
 Write-Host "Updating PATH environment variable for kubelogin"
-$currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
-if ($currentPath -notlike "*$kubeloginPath*") {
-    [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$kubeloginPath", [System.EnvironmentVariableTarget]::Machine)
-}
+[System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$kubeloginPath", [System.EnvironmentVariableTarget]::Machine)
 
-# Verify installation
-Write-Host "Verifying kubelogin installation..."
-try {
-    $kubeloginVersionOutput = & "$kubeloginExePath" --version
-    Write-Host "kubelogin installed successfully: $kubeloginVersionOutput"
-} catch {
-    throw "Failed to verify kubelogin installation. Error: $_"
-}
-
+# Installation validation has been moved to Kubelogin.Tests.ps1
 Write-Host "kubelogin installation completed successfully."
+
+# Run Pester test
+Invoke-Pester C:\image\tests\Kubelogin.Tests.ps1
 
 
 #---------------
