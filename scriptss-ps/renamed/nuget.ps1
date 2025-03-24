@@ -74,7 +74,7 @@ Write-Host "Ensuring TLS1.2 is configured for use..."
 # Configure JFrog Artifactory as a NuGet Source using .NET CLI for All Users and All Hosts
 # ==========================
 $NuGetSourceName = "Artifactory"
-$NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget-remote/index.json"
+$NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget/index.json"
 
 # Ensure the Config Directory Exists for All Users
 $NuGetConfigDir = "C:\ProgramData\NuGet\Config"
