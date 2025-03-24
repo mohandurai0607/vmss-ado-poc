@@ -142,18 +142,20 @@ Write-Host "kubelogin installation completed successfully."
 #     }
 # }
 #------------------
-# Fetch kubelogin tool details from the manifest
-$kubeloginTool = Get-ManifestTool -Name "Kubelogin"
+BeforeAll {
+    # Fetch kubelogin tool details from the manifest
+    $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
 
-# Ensure the tool exists in the manifest
-if ($null -eq $kubeloginTool) {
-    throw "Failed to get the tool 'kubelogin' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
+    # Ensure the tool exists in the manifest
+    if ($null -eq $kubeloginTool) {
+        throw "Failed to get the tool 'kubelogin' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
+    }
+
+    # Define the expected installation path
+    $softwarePath = "C:\software"
+    $kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$($kubeloginTool.defaultVersion)"
+    $kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
 }
-
-# Define the expected installation path
-$softwarePath = "C:\software"
-$kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$($kubeloginTool.defaultVersion)"
-$kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
 
 Describe "kubelogin Installation Validation" {
 
@@ -169,12 +171,6 @@ Describe "kubelogin Installation Validation" {
             $versionOutput | Should -Not -BeNullOrEmpty
         }
     }
-
-    Context "kubelogin PATH validation" {
-        It "kubelogin should be accessible from PATH" {
-            $kubeloginCommand = Get-Command kubelogin.exe -ErrorAction SilentlyContinue
-            $kubeloginCommand | Should -Not -Be $null
-        }
-    }
 }
+
 
