@@ -60,6 +60,7 @@
 
 
 -----------------------------------
+
 # Fetch kubelogin tool details from the manifest
 $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
 
@@ -99,11 +100,14 @@ if (-Not (Test-Path $kubeloginExePath)) {
     throw "kubelogin installation failed. The required binary file is missing in the installation directory."
 }
 
-# Directly set the PATH variable (without checking if it already exists)
+# Update the PATH environment variable and refresh it in the current session
 Write-Host "Updating PATH environment variable for kubelogin"
+$currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 [System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$kubeloginPath", [System.EnvironmentVariableTarget]::Machine)
 
-# Installation validation has been moved to Kubelogin.Tests.ps1
+# Refresh PATH in the current session
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+
 Write-Host "kubelogin installation completed successfully."
 
 # Run Pester test
@@ -157,10 +161,9 @@ Describe "kubelogin Installation Validation" {
 
     Context "kubelogin version check" {
         It "kubelogin should return a valid version output" {
-            $versionOutput = & kubelogin.exe --version
+            $versionOutput = & "$kubeloginExePath" --version
             $versionOutput | Should -Not -BeNullOrEmpty
         }
     }
 }
-
 
