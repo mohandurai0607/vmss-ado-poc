@@ -95,3 +95,39 @@ Write-Host "Current pip configuration:"
 Write-Host $ConfigCheck
 
 Write-Host "pip repository setup completed successfully."
+
+
+----------------
+
+# ==============================
+# Pester Validation for pip Configuration
+# ==============================
+
+BeforeAll {
+    $pipConfigPath = "C:\ProgramData\pip\pip.ini"
+    $testPackage = "requests"
+}
+
+Describe "pip Installation and Configuration Validation" {
+
+    Context "pip Configuration File Validation" {
+        It "pip.ini should exist in the expected directory" {
+            Test-Path $pipConfigPath | Should -Be $true
+        }
+    }
+
+    Context "pip Executable Validation" {
+        It "pip should be installed and accessible" {
+            $pipVersionOutput = & pip --version
+            $pipVersionOutput | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    Context "pip Package Installation Validation" {
+        It "pip should install the test package from Artifactory" {
+            $installOutput = & pip install $testPackage --no-cache-dir
+            $installOutput | Should -Match "Successfully installed"
+        }
+    }
+}
+
