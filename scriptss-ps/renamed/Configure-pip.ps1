@@ -1,4 +1,45 @@
 # =========================================
+# Install pip from JFrog Artifactory
+# =========================================
+
+# Define JFrog details
+$JFROG_URL = "https://your-jfrog-instance/artifactory/python-local/get-pip.py"
+$LOCAL_PIP_PATH = "C:\Temp\get-pip.py"
+
+# Ensure C:\Temp exists
+if (!(Test-Path -Path "C:\Temp")) {
+    New-Item -ItemType Directory -Path "C:\Temp" | Out-Null
+}
+
+# Download get-pip.py from JFrog
+Write-Host "Downloading get-pip.py from JFrog..."
+Invoke-WebRequest -Uri $JFROG_URL -OutFile $LOCAL_PIP_PATH
+
+# Verify if the file was downloaded
+if (!(Test-Path -Path $LOCAL_PIP_PATH)) {
+    Write-Host "Error: get-pip.py not found. Check JFrog URL and network access."
+    exit 1
+}
+
+Write-Host "Successfully downloaded get-pip.py."
+
+# Run get-pip.py to install pip
+Write-Host "Installing pip..."
+python $LOCAL_PIP_PATH
+
+# Verify pip installation
+Write-Host "Verifying pip installation..."
+$PipCheck = python -m pip --version
+if ($PipCheck) {
+    Write-Host "pip installed successfully: $PipCheck"
+} else {
+    Write-Host "Error: pip installation failed!"
+}
+
+
+
+
+# =========================================
 # Ensure the script runs with Administrator privileges
 # =========================================
 $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
