@@ -29,22 +29,16 @@ Write-Host "NuGet configuration completed successfully!"
 
 _____ Tets file-----------------
 
-BeforeAll {
-    # Define expected NuGet configuration values
-    $ExpectedSourceName = "Artifactory"
-    $PublicFeedNames = @("nuget.org", "Microsoft Visual Studio Offline Packages")
-}
-
 Describe "NuGet Configuration Validation" {
     Context "Current User Configuration" {
         It "Should contain Artifactory in sources" {
             $sources = dotnet nuget list source
-            $sources -match $ExpectedSourceName | Should -Not -BeNullOrEmpty
+            $sources -match "Artifactory" | Should -Not -BeNullOrEmpty
         }
 
         It "Should not list public NuGet sources" {
             $sources = dotnet nuget list source
-            $publicSources = $sources -match ($PublicFeedNames -join '|')
+            $publicSources = $sources -match "nuget.org|Microsoft Visual Studio Offline Packages"
             $publicSources | Should -BeNullOrEmpty
         }
     }
