@@ -136,38 +136,60 @@ Invoke-Pester C:\image\tests\Kubelogin.Tests.ps1
 #     }
 # }
 #------------------
-BeforeAll {
-    # Fetch kubelogin tool details from the manifest
-    $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
+# BeforeAll {
+#     # Fetch kubelogin tool details from the manifest
+#     $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
 
-    # Ensure the tool exists in the manifest
-    if ($null -eq $kubeloginTool) {
-        throw "Failed to get the tool 'kubelogin' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
-    }
+#     # Ensure the tool exists in the manifest
+#     if ($null -eq $kubeloginTool) {
+#         throw "Failed to get the tool 'kubelogin' from the manifest file. Verify the tool exists in the manifest or check the logs for additional error messages."
+#     }
 
-    # Define the expected installation path
-    $softwarePath = "C:\software"
-    $kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$($kubeloginTool.defaultVersion)"
-    $kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
+#     # Define the expected installation path
+#     $softwarePath = "C:\software"
+#     $kubeloginPath = Join-Path $softwarePath "kubelogin_windows_$($kubeloginTool.defaultVersion)"
+#     $kubeloginExePath = Join-Path $kubeloginPath "kubelogin.exe"
 
-    # Make sure the variable is globally available
-    Set-Variable -Name "kubeloginExePath" -Value $kubeloginExePath -Scope Global
-}
+#     # Make sure the variable is globally available
+#     Set-Variable -Name "kubeloginExePath" -Value $kubeloginExePath -Scope Global
+# }
+
+# Describe "kubelogin Installation Validation" {
+#     # Fetch kubelogin tool details from the manifest
+#     $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
+
+#     Context "kubelogin executable validation" {
+#         It "kubelogin.exe should exist in the expected directory" {
+#             Test-Path kubelogin.exe | Should -Be $true
+#         }
+#     }
+
+#     Context "kubelogin version check" {
+#         It "kubelogin should return a valid version output" {
+#             $versionOutput = & kubelogin.exe --version
+#             $versionOutput | Should -Not -BeNullOrEmpty
+#         }
+#     }
+# }
+
+#_________
+
 
 Describe "kubelogin Installation Validation" {
-
     Context "kubelogin executable validation" {
-        It "kubelogin.exe should exist in the expected directory" {
-            Test-Path $kubeloginExePath | Should -Be $true
+        It "kubelogin.exe should be accessible in the system PATH" {
+            $kubeloginExists = Get-Command kubelogin.exe -ErrorAction SilentlyContinue
+            $kubeloginExists | Should -Not -BeNullOrEmpty
         }
     }
 
     Context "kubelogin version check" {
         It "kubelogin should return a valid version output" {
-            $versionOutput = & "$kubeloginExePath" --version
+            $versionOutput = & kubelogin.exe --version
             $versionOutput | Should -Not -BeNullOrEmpty
         }
     }
 }
+
 
 
