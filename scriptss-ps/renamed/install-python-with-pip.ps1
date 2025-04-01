@@ -14,7 +14,7 @@ if ($pythonTool.source -ne "artifactory") {
 $pythonVersion = $pythonTool.defaultVersion
 $pythonUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python/windows/$pythonVersion/python-$pythonVersion.zip"
 
-# Internal Artifactory URL for get-pip.py
+# Artifactory URL for get-pip.py
 $getPipUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python/windows/get-pip.py"
 $getPipFilePath = "$env:TEMP\get-pip.py"
 
@@ -133,10 +133,10 @@ if ($currentPath -notlike "*$pipScriptsPath*") {
 # Refresh the PATH in the current session
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
 
-
-
 Write-Host "Python and pip installation completed successfully."
 
+# Run Pester test
+Invoke-Pester C:\image\tests\Python.Tests.ps1
 
 ------------ test --
 
