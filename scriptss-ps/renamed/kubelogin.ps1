@@ -176,14 +176,16 @@ Invoke-Pester C:\image\tests\Kubelogin.Tests.ps1
 
 
 Describe "kubelogin Installation Validation" {
-    Context "kubelogin executable validation" {
+    $kubeloginTool = Get-ManifestTool -Name "Kubelogin"
+    
+    Context "$kubeloginTool executable validation" {
         It "kubelogin.exe should be accessible in the system PATH" {
             $kubeloginExists = Get-Command kubelogin.exe -ErrorAction SilentlyContinue
             $kubeloginExists | Should -Not -BeNullOrEmpty
         }
     }
 
-    Context "kubelogin version check" {
+    Context "$kubeloginTool version check" {
         It "kubelogin should return a valid version output" {
             $versionOutput = & kubelogin.exe --version
             $versionOutput | Should -Not -BeNullOrEmpty
