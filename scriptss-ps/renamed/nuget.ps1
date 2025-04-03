@@ -1,17 +1,24 @@
-# ==========================
-# Ensure TLS 1.2 is Enabled (Additive)
-# ==========================
+# Ensure TLS 1.2 is enabled
 Write-Host "Ensuring TLS1.2 is enabled for current session..."
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
 
-# ==========================
-# Configure JFrog Artifactory as Machine-Wide NuGet Source
-# ==========================
+# Define NuGet configuration path
+$NuGetConfigPath = "C:\Program Files (x86)\NuGet\Config\NuGet.config"
 $NuGetSourceName = "Artifactory"
 $NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget/index.json"
 
-# Correct machine-wide config location per Microsoft documentation
-$NuGetConfigPath = "C:\Program Files (x86)\NuGet\Config\NuGet.config"
+# Ensure NuGet config directory exists
+$NuGetConfigDir = Split-Path -Path $NuGetConfigPath -Parent
+if (!(Test-Path $NuGetConfigDir)) {
+    Write-Host "Creating NuGet configuration directory..."
+    New-Item -ItemType Directory -Path $NuGetConfigDir -Force
+}
+
+# Ensure NuGet.config exists
+if (!(Test-Path $NuGetConfigPath)) {
+    Write-Host "Creating NuGet configuration file..."
+    "<configuration><packageSources></packageSources></configuration>" | Out-File -Encoding utf8 $NuGetConfigPath
+}
 
 # Remove existing public NuGet feed if present
 Write-Host "Checking for public NuGet feed..."
@@ -26,6 +33,36 @@ Write-Host "Configuring Artifactory as machine-wide NuGet source..."
 dotnet nuget add source $NuGetSourceUrl --name $NuGetSourceName --configfile $NuGetConfigPath
 
 Write-Host "NuGet configuration completed successfully!"
+
+
+# # ==========================
+# # Ensure TLS 1.2 is Enabled (Additive)
+# # ==========================
+# Write-Host "Ensuring TLS1.2 is enabled for current session..."
+# [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+
+# # ==========================
+# # Configure JFrog Artifactory as Machine-Wide NuGet Source
+# # ==========================
+# $NuGetSourceName = "Artifactory"
+# $NuGetSourceUrl = "https://prod.artifactory.nfcu.net/artifactory/api/nuget/v3/nuget/index.json"
+
+# # Correct machine-wide config location per Microsoft documentation
+# $NuGetConfigPath = "C:\Program Files (x86)\NuGet\Config\NuGet.config"
+
+# # Remove existing public NuGet feed if present
+# Write-Host "Checking for public NuGet feed..."
+# $publicFeed = dotnet nuget list source --configfile $NuGetConfigPath | Where-Object { $_ -match "nuget.org" }
+# if ($publicFeed) {
+#     Write-Host "Removing public NuGet feed..."
+#     dotnet nuget remove source "nuget.org" --configfile $NuGetConfigPath
+# }
+
+# # Add Artifactory as machine-wide source
+# Write-Host "Configuring Artifactory as machine-wide NuGet source..."
+# dotnet nuget add source $NuGetSourceUrl --name $NuGetSourceName --configfile $NuGetConfigPath
+
+# Write-Host "NuGet configuration completed successfully!"
 
 _____ Tets file-----------------
 
