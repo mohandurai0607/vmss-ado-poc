@@ -16,9 +16,9 @@ if ($pythonTool.source -ne "artifactory") {
 $pythonVersion = $pythonTool.defaultVersion
 
 # Define JFrog Artifactory URLs
-$jfrogBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python/windows"
-$pythonZipUrl = "$jfrogBaseUrl/$pythonVersion/python-$pythonVersion.zip"
-$getPipUrl = "$jfrogBaseUrl/get-pip.py"
+$jfrogBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python"
+$pythonZipUrl = "$jfrogBaseUrl/windows/$pythonVersion/python-$pythonVersion.zip"
+$getPipUrl = "$jfrogBaseUrl/windows/get-pip.py"
 
 # Define custom installation directory
 $installDir = "C:\cicd-tools\$pythonVersion\python-$pythonVersion"
@@ -97,9 +97,9 @@ $pythonTool = "Python"
 $pythonVersion = "3.12.8" 
 
 # Define JFrog Artifactory URLs
-$jfrogBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python/windows"
-$pythonZipUrl = "$jfrogBaseUrl/$pythonVersion/python-$pythonVersion.zip"
-$getPipUrl = "$jfrogBaseUrl/get-pip.py"
+$jfrogBaseUrl = "https://prod.artifactory.nfcu.net:443/artifactory/cicd-generic-release-local/python"
+$pythonZipUrl = "$jfrogBaseUrl/windows/$pythonVersion/python-$pythonVersion.zip"
+$getPipUrl = "$jfrogBaseUrl/windows/get-pip.py"
 
 # Define custom installation directory
 $installDir = "C:\cicd-tools\$pythonVersion\python-$pythonVersion"
