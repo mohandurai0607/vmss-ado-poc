@@ -21,7 +21,7 @@ $pythonZipUrl = "$jfrogBaseUrl/$pythonVersion/windows/python-$pythonVersion.zip"
 $getPipUrl = "$jfrogBaseUrl/windows/get-pip.py"
 
 # Define custom installation directory
-$installDir = "C:\cicd-tools\$pythonVersion\python-$pythonVersion"
+$installDir = "C:\cicd-tools\python\$pythonVersion\python-$pythonVersion"
 
 # Create the installation directory if it doesn't exist
 if (-not (Test-Path $installDir)) {
@@ -102,7 +102,7 @@ $pythonZipUrl = "$jfrogBaseUrl/$pythonVersion/windows/python-$pythonVersion.zip"
 $getPipUrl = "$jfrogBaseUrl/windows/get-pip.py"
 
 # Define custom installation directory
-$installDir = "C:\cicd-tools\$pythonVersion\python-$pythonVersion"
+$installDir = "C:\cicd-tools\python\$pythonVersion\python-$pythonVersion"
 
 # Create the installation directory if it doesn't exist
 if (-not (Test-Path $installDir)) {
