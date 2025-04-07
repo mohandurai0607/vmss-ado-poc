@@ -171,17 +171,29 @@ Invoke-Pester C:\image\tests\PipConfig.Tests.ps1
 
 #--- test file
 
-Describe "pip Configuration Validation" {
-    
-    Context "Pip Configuration" {
-        It "Should contain Artifactory in pip sources" {
-            $config = pip config get global.index-url
-            $config | Should -Match "artifactory"
+$globalPipPath = "C:\ProgramData\pip\pip.ini"
+
+Describe "pip.ini Configuration Validation (Global)" {
+
+    Context "Global pip.ini File Check" {
+        It "Should exist at $globalPipPath" {
+            Test-Path $globalPipPath | Should -BeTrue
+        }
+    }
+
+    Context "Artifactory Configuration Check" {
+        $content = Get-Content $globalPipPath -Raw
+
+        It "Should contain index-url pointing to Artifactory" {
+            $content | Should -Match "index-url\s*=\s*https:\/\/.*artifactory"
         }
 
-        It "Should not list PyPI as a source" {
-            $config = pip config get global.index-url
-            $config | Should -Not -Match "pypi.org"
+        It "Should contain trusted-host for Artifactory" {
+            $content | Should -Match "trusted-host\s*=\s*prod\.artifactory\.nfcu\.net"
+        }
+
+        It "Should NOT contain pypi.org" {
+            $content | Should -Not -Match "pypi\.org"
         }
     }
 }
