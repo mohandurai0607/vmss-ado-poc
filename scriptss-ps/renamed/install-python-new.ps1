@@ -176,3 +176,24 @@ $pipCheck = & "$installDir\python.exe" -m pip --version
 
 Write-Host "✔ Python Version: $pythonCheck"
 Write-Host "✔ pip Version: $pipCheck"
+
+
+----- pester test
+
+# PythonPip.Tests.ps1
+
+Describe "Python and Pip Version Check" {
+
+    It "Should return a valid Python version" {
+        $pythonVersion = & python --version 2>&1
+        Write-Host "Python version: $pythonVersion"
+        $pythonVersion | Should -Match "^Python\s+\d+\.\d+\.\d+"
+    }
+
+    It "Should return a valid pip version" {
+        $pipVersion = & pip --version 2>&1
+        Write-Host "Pip version: $pipVersion"
+        $pipVersion | Should -Match "^pip\s+\d+\.\d+(\.\d+)?"
+    }
+}
+
