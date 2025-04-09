@@ -38,30 +38,49 @@ Invoke-Pester C:\image\tests\PipConfig.Tests.ps1
 
 #--- test file
 
-$globalPipPath = "C:\ProgramData\pip\pip.ini"
+# $globalPipPath = "C:\ProgramData\pip\pip.ini"
 
-Describe "pip.ini Configuration Validation (Global)" {
+# Describe "pip.ini Configuration Validation (Global)" {
 
-    Context "Global pip.ini File Check" {
-        It "Should exist at $globalPipPath" {
-            Test-Path $globalPipPath | Should -BeTrue
-        }
+#     Context "Global pip.ini File Check" {
+#         It "Should exist at $globalPipPath" {
+#             Test-Path $globalPipPath | Should -BeTrue
+#         }
+#     }
+
+#     Context "Artifactory Configuration Check" {
+#         $content = Get-Content $globalPipPath -Raw
+
+#         It "Should contain index-url pointing to Artifactory" {
+#             $content | Should -Match "index-url\s*=\s*https:\/\/.*artifactory"
+#         }
+
+#         It "Should contain trusted-host for Artifactory" {
+#             $content | Should -Match "trusted-host\s*=\s*prod\.artifactory\.nfcu\.net"
+#         }
+
+#         It "Should NOT contain pypi.org" {
+#             $content | Should -Not -Match "pypi\.org"
+#         }
+#     }
+# }
+
+Describe "pip.ini Global Configuration Validation" {
+
+    $globalPipPath = "C:\ProgramData\pip\pip.ini"
+
+    It "Should have pip.ini present in C:\ProgramData\pip" {
+        Test-Path $globalPipPath | Should -BeTrue
     }
 
-    Context "Artifactory Configuration Check" {
+    It "Should contain index-url with Artifactory" {
         $content = Get-Content $globalPipPath -Raw
+        $content | Should -Match "index-url\s*=\s*https:\/\/.*artifactory"
+    }
 
-        It "Should contain index-url pointing to Artifactory" {
-            $content | Should -Match "index-url\s*=\s*https:\/\/.*artifactory"
-        }
-
-        It "Should contain trusted-host for Artifactory" {
-            $content | Should -Match "trusted-host\s*=\s*prod\.artifactory\.nfcu\.net"
-        }
-
-        It "Should NOT contain pypi.org" {
-            $content | Should -Not -Match "pypi\.org"
-        }
+    It "Should contain trusted-host with Artifactory" {
+        $content = Get-Content $globalPipPath -Raw
+        $content | Should -Match "trusted-host\s*=\s*prod\.artifactory\.nfcu\.net"
     }
 }
 
