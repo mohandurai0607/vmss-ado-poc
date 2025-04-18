@@ -1,4 +1,4 @@
-$edgeInstallerUrl = "https://msedgesetup.azureedge.net/latest/MicrosoftEdgeEnterpriseX64.msi"
+$edgeInstallerUrl = "https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/f509377e-81d5-49b0-a02d-89088b71ceb7/MicrosoftEdgeEnterpriseX64.msi"
 $installerPath = "$env:TEMP\MicrosoftEdgeEnterpriseX64.msi"
 
 if (-not (Test-Path "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")) {
