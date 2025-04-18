@@ -5,7 +5,7 @@
 
 # Download and install latest Microsoft Edge Stable (Enterprise Offline Installer)
 Install-Binary `
-    -Url 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/3ec8a11b-d9d4-4685-84e6-1b9a9f3ae6ad/MicrosoftEdgeEnterpriseX64.msi'
+    -Url 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/a2662b5b-97d0-4312-8946-598355851b3b/MicrosoftEdgeEnterpriseX64.msi'
 
 # Block Edge update services
 Write-Host "Blocking Microsoft Edge auto-update..."
@@ -34,7 +34,6 @@ $edgeExePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if (-not (Test-Path $edgeExePath)) {
     $edgeExePath = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
 }
-
 [version]$edgeVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($edgeExePath).ProductVersion
 $edgeVersionString = "$($edgeVersion.Major).$($edgeVersion.Minor).$($edgeVersion.Build).$($edgeVersion.Revision)"
 $edgeMajorVersion = $edgeVersion.Major
@@ -53,3 +52,5 @@ Expand-7ZipArchive -Path $edgeDriverZipPath -DestinationPath $edgeDriverPath -Ex
 # Set environment variable
 Write-Host "Setting EdgeWebDriver environment variable..."
 [Environment]::SetEnvironmentVariable("EdgeWebDriver", $edgeDriverPath, "Machine")
+
+Write-Host "Edge Is Installed Sucessfully..."
