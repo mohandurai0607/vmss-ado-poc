@@ -1,56 +1,46 @@
-################################################################################
-##  File:   Install-Edge.ps1
-##  Desc:   Install Microsoft Edge browser and Edge WebDriver
-################################################################################
+$edgeInstallerUrl = "https://msedgesetup.azureedge.net/latest/MicrosoftEdgeEnterpriseX64.msi"
+$installerPath = "$env:TEMP\MicrosoftEdgeEnterpriseX64.msi"
 
-# Download and install latest Microsoft Edge Stable (Enterprise Offline Installer)
-Install-Binary `
-    -Url 'https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/a2662b5b-97d0-4312-8946-598355851b3b/MicrosoftEdgeEnterpriseX64.msi'
-
-# Block Edge update services
-Write-Host "Blocking Microsoft Edge auto-update..."
-$regEdgeUpdatePath = "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate"
-New-Item -Path $regEdgeUpdatePath -Force
-
-$regEdgeParams = @(
-    @{ Name = "AutoUpdateCheckPeriodMinutes"; Value = 0 },
-    @{ Name = "UpdateDefault"; Value = 0 },
-    @{ Name = "DisableAutoUpdateChecksCheckboxValue"; Value = 1 }
-)
-
-$regEdgeParams | ForEach-Object {
-    New-ItemProperty -Path $regEdgeUpdatePath -Name $_.Name -Value $_.Value -PropertyType DWord -Force
+if (-not (Test-Path "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")) {
+    Write-Host "Downloading Edge..."
+    Invoke-WebRequest -Uri $edgeInstallerUrl -OutFile $installerPath
+    Start-Process msiexec.exe -Wait -ArgumentList "/i `"$installerPath`" /quiet /norestart"
+    Remove-Item $installerPath -Force
 }
 
-# Install Edge WebDriver
-Write-Host "Installing Edge WebDriver..."
-$edgeDriverPath = "$($env:SystemDrive)\SeleniumWebDrivers\EdgeDriver"
-if (-not (Test-Path -Path $edgeDriverPath)) {
-    New-Item -Path $edgeDriverPath -ItemType Directory -Force
-}
-
-# Get local Edge version
 $edgeExePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-if (-not (Test-Path $edgeExePath)) {
-    $edgeExePath = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+$edgeVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($edgeExePath).ProductVersion
+$majorVersion = $edgeVersion.Split('.')[0]
+
+$driverPath = "C:\SeleniumWebDrivers\EdgeDriver"
+New-Item -Path $driverPath -ItemType Directory -Force | Out-Null
+
+$latestDriverVersion = Invoke-RestMethod "https://msedgedriver.azureedge.net/LATEST_RELEASE_$majorVersion"
+$driverUrl = "https://msedgedriver.azureedge.net/$latestDriverVersion/edgedriver_win64.zip"
+$driverZip = "$env:TEMP\edgedriver.zip"
+
+Write-Host "Downloading WebDriver v$latestDriverVersion..."
+Invoke-WebRequest -Uri $driverUrl -OutFile $driverZip
+Expand-Archive -Path $driverZip -DestinationPath $driverPath -Force
+Remove-Item $driverZip -Force
+
+Write-Host "Configuring system environment variables..."
+$env:Path += ";$driverPath"
+[Environment]::SetEnvironmentVariable("Path", "$($env:Path);$driverPath", "Machine")
+[Environment]::SetEnvironmentVariable("EdgeWebDriver", $driverPath, "Machine")
+
+if (-not (Get-Module -Name Selenium -ListAvailable)) {
+    Install-Module -Name Selenium -Force -Scope CurrentUser
 }
-[version]$edgeVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($edgeExePath).ProductVersion
-$edgeVersionString = "$($edgeVersion.Major).$($edgeVersion.Minor).$($edgeVersion.Build).$($edgeVersion.Revision)"
-$edgeMajorVersion = $edgeVersion.Major
 
-Write-Host "Detected Microsoft Edge version: $edgeVersionString"
+Import-Module Selenium
+$edgeOptions = New-Object OpenQA.Selenium.Edge.EdgeOptions
+$edgeService = [OpenQA.Selenium.Edge.EdgeDriverService]::CreateDefaultService($driverPath)
+$driver = New-Object OpenQA.Selenium.Edge.EdgeDriver($edgeService, $edgeOptions)
 
-# Build Edge WebDriver URL
-$edgeDriverDownloadUrl = "https://msedgedriver.azureedge.net/$edgeVersionString/edgedriver_win64.zip"
+Write-Host "Success! Edge version: $edgeVersion"
+Write-Host "WebDriver path: $driverPath\msedgedriver.exe"
 
-Write-Host "Downloading Edge WebDriver from $edgeDriverDownloadUrl..."
-$edgeDriverZipPath = Invoke-DownloadWithRetry $edgeDriverDownloadUrl
-
-Write-Host "Extracting Edge WebDriver..."
-Expand-7ZipArchive -Path $edgeDriverZipPath -DestinationPath $edgeDriverPath -ExtractMethod "e"
-
-# Set environment variable
-Write-Host "Setting EdgeWebDriver environment variable..."
-[Environment]::SetEnvironmentVariable("EdgeWebDriver", $edgeDriverPath, "Machine")
-
-Write-Host "Edge Is Installed Sucessfully..."
+$driver.Navigate().GoToUrl("https://www.google.com")
+Start-Sleep -Seconds 3
+$driver.Quit()
